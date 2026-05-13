@@ -63,7 +63,7 @@ EVENT = {
 
 # ----------------- Card visual constants -----------------
 
-CARD_W, CARD_H = 1950, 1320
+CARD_W, CARD_H = 1950, 1340
 # ISO CR80 / common conference badge insert, landscape, at 300 dpi (3.375" × 2.125")
 CONFERENCE_CARD_W = int(round(3.375 * 300))
 CONFERENCE_CARD_H = int(round(2.125 * 300))
@@ -157,6 +157,24 @@ def font(size, bold=False):
                 ("/System/Library/Fonts/Supplemental/Arial.ttf", 0),
                 ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0),
                 ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", 0),
+            ]
+        _FONT_CACHE[key] = _font_try(cands, size)
+    return _FONT_CACHE[key]
+
+def mono_font(size, bold=False):
+    key = ("mono", size, bold)
+    if key not in _FONT_CACHE:
+        if bold:
+            cands = [
+                ("/System/Library/Fonts/Menlo.ttc", 1),
+                ("/System/Library/Fonts/Monaco.dfont", 0),
+                ("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 0),
+            ]
+        else:
+            cands = [
+                ("/System/Library/Fonts/Menlo.ttc", 0),
+                ("/System/Library/Fonts/Monaco.dfont", 0),
+                ("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 0),
             ]
         _FONT_CACHE[key] = _font_try(cands, size)
     return _FONT_CACHE[key]
@@ -479,7 +497,7 @@ def render_card(guest, card_format="event"):
     # ---------- FOOTER ----------
     footer_y = div_y + 40
 
-    # QR code
+    # QR code (left), framed with a thin border to read as a scan target
     qr = qrcode.QRCode(
         version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
@@ -489,26 +507,45 @@ def render_card(guest, card_format="event"):
     qr.add_data(guest["id"])
     qr.make(fit=True)
     qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
-    qr_size = 240
+    qr_size = 280
+    qr_x = 110
+    qr_y = footer_y
     qr_img = qr_img.resize((qr_size, qr_size), Image.NEAREST)
-    card.paste(qr_img, (110, footer_y))
+    card.paste(qr_img, (qr_x, qr_y))
+    draw.rectangle([qr_x - 3, qr_y - 3, qr_x + qr_size + 2, qr_y + qr_size + 2],
+                   outline=COLOR_DIVIDER, width=2)
 
-    code_font = font(36, bold=True)
-    code_w = draw.textlength(guest["id"], font=code_font)
-    draw.text((110 + (qr_size - code_w) // 2, footer_y + qr_size + 14),
-              guest["id"], font=code_font, fill=COLOR_TEXT)
+    # Serial code, monospace, centered under QR
+    serial_font = mono_font(28, bold=True)
+    serial_w = draw.textlength(guest["id"], font=serial_font)
+    draw.text((qr_x + (qr_size - serial_w) // 2, qr_y + qr_size + 18),
+              guest["id"], font=serial_font, fill=COLOR_GRAY)
 
-    # Door verification (right)
-    dv_x = CARD_W - 760
-    draw_lock(draw, dv_x, footer_y + 6, 48, COLOR_DARK)
-    draw.text((dv_x + 66, footer_y), "DOOR VERIFICATION",
-              font=font(42, bold=True), fill=COLOR_DARK)
-    draw.text((dv_x, footer_y + 78),
-              "Security scans this barcode at entry.",
-              font=font(32), fill=COLOR_TEXT)
-    draw.text((dv_x, footer_y + 124),
+    # Door verification (paired to the right of QR)
+    dv_x = qr_x + qr_size + 80
+    dv_top = qr_y + 8
+
+    draw_lock(draw, dv_x, dv_top + 6, 52, COLOR_DARK)
+    draw.text((dv_x + 70, dv_top), "DOOR VERIFICATION",
+              font=font(44, bold=True), fill=COLOR_DARK)
+
+    # Accent bar under header
+    underline_y = dv_top + 72
+    draw.rectangle([dv_x, underline_y, dv_x + 80, underline_y + 4], fill=COLOR_GOLD)
+
+    draw.text((dv_x, dv_top + 96),
+              "Scan this code at entry.",
+              font=font(34), fill=COLOR_TEXT)
+    draw.text((dv_x, dv_top + 146),
               "Valid for one entry only.",
-              font=font(32), fill=COLOR_TEXT)
+              font=font(34), fill=COLOR_TEXT)
+
+    # Issuer line at the bottom-right (subtle, like a ticket-stub tagline)
+    issuer_text = "Sudanese Forum · 16 May 2026"
+    issuer_font = font(24)
+    iw = draw.textlength(issuer_text, font=issuer_font)
+    draw.text((CARD_W - iw - 90, qr_y + qr_size - 24),
+              issuer_text, font=issuer_font, fill=COLOR_GRAY)
 
     return finalize_card_for_format(card, card_format)
 
