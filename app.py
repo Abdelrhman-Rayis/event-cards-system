@@ -147,6 +147,8 @@ def font(size, bold=False):
                 ("/System/Library/Fonts/Helvetica.ttc", 1),
                 ("/Library/Fonts/Arial Bold.ttf", 0),
                 ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 0),
+                ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 0),
+                ("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 0),
             ]
         else:
             cands = [
@@ -154,6 +156,8 @@ def font(size, bold=False):
                 ("/System/Library/Fonts/Helvetica.ttc", 0),
                 ("/Library/Fonts/Arial.ttf", 0),
                 ("/System/Library/Fonts/Supplemental/Arial.ttf", 0),
+                ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0),
+                ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", 0),
             ]
         _FONT_CACHE[key] = _font_try(cands, size)
     return _FONT_CACHE[key]
