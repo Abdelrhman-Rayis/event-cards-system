@@ -1,10 +1,14 @@
-"""Card image composition: header, body, QR footer."""
+"""Card image composition driven by the live event.json config.
 
-from pathlib import Path
+Header, info columns and issuer line all read from ``config.CONFIG`` so
+that retitling the event or reordering fields in event.json immediately
+shows up on the next render (the wizard mutates CONFIG in place).
+"""
 
 import qrcode
 from PIL import Image, ImageDraw, ImageOps
 
+from .. import config
 from ..config import (
     BG_CREAM,
     BG_HEADER_BORDER,
@@ -17,17 +21,16 @@ from ..config import (
     COLOR_TEXT,
     CONFERENCE_CARD_H,
     CONFERENCE_CARD_W,
-    EVENT,
     PHOTOS_DIR,
     normalize_card_format,
 )
 from ..models import companions_label
 from .fonts import (
-    ar_font,
     ar_shape,
     display_bidi,
     fit_text_for_width,
     font,
+    has_arabic,
     initials_from_name,
     mono_font,
     text_font,
@@ -55,7 +58,7 @@ def finalize_card_for_format(img, card_format):
     return out
 
 
-# ----------------- Icon drawing (no emoji-font dependency) -----------------
+# ----------------- Icons -----------------
 
 
 def draw_pin(d, x, y, s, color):
@@ -68,9 +71,7 @@ def draw_pin(d, x, y, s, color):
         ],
         fill=color,
     )
-    d.ellipse(
-        [x + s * 0.36, y + s * 0.22, x + s * 0.64, y + s * 0.50], fill=color
-    )
+    d.ellipse([x + s * 0.36, y + s * 0.22, x + s * 0.64, y + s * 0.50], fill=color)
 
 
 def draw_lock(d, x, y, s, color):
@@ -84,14 +85,11 @@ def draw_lock(d, x, y, s, color):
 
 # ----------------- Logo caching -----------------
 
-# Only cache successful loads — never cache "missing file" or the logo never
-# appears until process restart.
 _logo_cache_mtime = None
 _logo_cache_image = None
 
 
 def _resolve_logo_path():
-    """First existing logo file wins (absolute paths)."""
     from ..config import STATIC_DIR
 
     for name in ("logo.png", "logo.jpg", "logo.webp"):
@@ -102,7 +100,6 @@ def _resolve_logo_path():
 
 
 def _header_logo_image():
-    """RGBA logo scaled for header, or None if missing/unreadable."""
     global _logo_cache_mtime, _logo_cache_image
     path = _resolve_logo_path()
     if path is None:
@@ -128,7 +125,6 @@ def _header_logo_image():
 
 
 def _paste_header_logo(card):
-    """Paste logo on cream header; return x for English title start."""
     lg = _header_logo_image()
     if lg is None:
         return 100
@@ -146,7 +142,13 @@ def _paste_header_logo(card):
 
 
 def render_header(card):
-    """Bilingual title on a cream strip, then a thin row with date/time/location."""
+    """Cream strip with optional bilingual title, then a thin info row."""
+    cfg = config.CONFIG
+    title_primary = (cfg.get("title_primary") or "").strip()
+    title_secondary = (cfg.get("title_secondary") or "").strip()
+    title_primary_ar = (cfg.get("title_primary_ar") or "").strip()
+    title_secondary_ar = (cfg.get("title_secondary_ar") or "").strip()
+
     top_h = 290
     draw = ImageDraw.Draw(card)
     draw.rectangle([0, 0, CARD_W, top_h], fill=BG_CREAM)
@@ -154,19 +156,29 @@ def render_header(card):
     en_x = _paste_header_logo(card)
     draw = ImageDraw.Draw(card)
 
-    title_font = font(86, bold=True)
-    draw.text((en_x, 60), EVENT["title_en_l1"], font=title_font, fill=COLOR_DARK)
-    draw.text((en_x, 165), EVENT["title_en_l2"], font=title_font, fill=COLOR_DARK)
+    if title_primary or title_secondary:
+        f = text_font(86, True, title_primary or title_secondary)
+        if title_primary:
+            draw.text(
+                (en_x, 60), display_bidi(title_primary), font=f, fill=COLOR_DARK
+            )
+        if title_secondary:
+            draw.text(
+                (en_x, 165), display_bidi(title_secondary), font=f, fill=COLOR_DARK
+            )
 
-    ar_title_font = ar_font(88, bold=True)
-    for i, line in enumerate([EVENT["title_ar_l1"], EVENT["title_ar_l2"]]):
-        txt = ar_shape(line)
-        w = draw.textlength(txt, font=ar_title_font)
-        draw.text(
-            (CARD_W - 100 - w, 60 + i * 105), txt, font=ar_title_font, fill=COLOR_DARK
-        )
+    if title_primary_ar or title_secondary_ar:
+        ar_f = text_font(88, True, title_primary_ar or title_secondary_ar)
+        for i, line in enumerate([title_primary_ar, title_secondary_ar]):
+            if not line:
+                continue
+            txt = ar_shape(line) if has_arabic(line) else line
+            w = draw.textlength(txt, font=ar_f)
+            draw.text(
+                (CARD_W - 100 - w, 60 + i * 105), txt, font=ar_f, fill=COLOR_DARK
+            )
 
-    # Event info strip (location only for now)
+    # Info strip
     info_strip_h = 100
     draw.rectangle([0, top_h, CARD_W, top_h + info_strip_h], fill=BG_CREAM)
     draw.line(
@@ -176,23 +188,58 @@ def render_header(card):
     )
 
     info_y = top_h + (info_strip_h - 44) // 2
-    info_font_obj = font(44)
-    text = EVENT["location"]
-    text_w = int(draw.textlength(text, font=info_font_obj))
+    info_font_obj = text_font(44, False, cfg.get("location", ""))
+    location_text = display_bidi(cfg.get("location", ""))
+    text_w = int(draw.textlength(location_text, font=info_font_obj))
     item_w = 44 + 14 + text_w
     x = (CARD_W - item_w) // 2
     draw_pin(draw, x, info_y, 44, COLOR_DARK)
     draw.text(
-        (x + 44 + 14, info_y + 2), text, font=info_font_obj, fill=COLOR_TEXT
+        (x + 44 + 14, info_y + 2), location_text, font=info_font_obj, fill=COLOR_TEXT
     )
 
     return top_h + info_strip_h
+
+
+# ----------------- Field value formatting -----------------
+
+
+def _card_columns(cfg):
+    """Fields to render as info columns. Excludes implicit name/photo fields."""
+    implicit = {"name", "photo"}
+    cols = []
+    for f in cfg.get("fields", []):
+        if not f.get("show_on_card", False):
+            continue
+        if f.get("id") in implicit:
+            continue
+        cols.append(f)
+    return cols[:3]
+
+
+def _format_field_value(field, value):
+    """Render a stored value into a string suitable for the card."""
+    if value is None:
+        return ""
+    fmt = field.get("display_format")
+    if fmt == "companion_label":
+        try:
+            return companions_label(int(value))
+        except (TypeError, ValueError):
+            return str(value)
+    if field.get("type") == "number":
+        try:
+            return f"+{int(value)}"
+        except (TypeError, ValueError):
+            return str(value)
+    return str(value)
 
 
 # ----------------- Full card -----------------
 
 
 def render_card(guest, card_format="event"):
+    cfg = config.CONFIG
     card = Image.new("RGB", (CARD_W, CARD_H), "white")
     header_h = render_header(card)
     draw = ImageDraw.Draw(card)
@@ -260,29 +307,31 @@ def render_card(guest, card_format="event"):
     )
     draw.text((info_x, photo_y + 64), name_disp, font=name_f, fill=COLOR_DARK)
 
+    # Info columns driven by event.json fields list
+    columns = _card_columns(cfg)
     col_label_y = photo_y + 268
     col_value_y = photo_y + 318
-    cols = [
-        ("TICKET TYPE", guest.get("ticket_type", "Standard")),
-        ("ROLE", guest.get("role", "Guest")),
-        ("GUESTS", companions_label(guest.get("companions", 0))),
-    ]
-    col_w = (CARD_W - info_x - 100) // 3
+    n_cols = max(1, len(columns) or 1)
+    col_w = (CARD_W - info_x - 100) // 3  # keep 3-column grid for spacing parity
     col_text_max_w = float(col_w - 24)
-    for i, (label, value) in enumerate(cols):
+    for i, field in enumerate(columns):
         cx = info_x + i * col_w
-        draw.text((cx, col_label_y), label, font=font(36), fill=COLOR_GRAY)
-        val = value if value is not None else ""
+        draw.text(
+            (cx, col_label_y),
+            field.get("label", field.get("id", "")).upper(),
+            font=font(36),
+            fill=COLOR_GRAY,
+        )
+        raw = guest.get(field["id"], field.get("default", ""))
+        val_str = _format_field_value(field, raw)
         val_f, val_disp, _ = fit_text_for_width(
-            draw, val, col_text_max_w, 60, True, min_size=32
+            draw, val_str, col_text_max_w, 60, True, min_size=32
         )
         draw.text((cx, col_value_y), val_disp, font=val_f, fill=COLOR_TEXT)
 
     # Secured line
     sec_y = col_value_y + 110
-    draw.ellipse(
-        [info_x, sec_y + 8, info_x + 16, sec_y + 24], fill=COLOR_DARK
-    )
+    draw.ellipse([info_x, sec_y + 8, info_x + 16, sec_y + 24], fill=COLOR_DARK)
     draw.text(
         (info_x + 28, sec_y),
         "SECURED  ·  HOLOGRAPHIC SEAL  ·  TAMPER-PROOF",
@@ -320,7 +369,6 @@ def render_card(guest, card_format="event"):
         width=2,
     )
 
-    # Right-of-QR column
     dv_x = qr_x + qr_size + 70
     dv_top = qr_y + 6
 
@@ -338,9 +386,7 @@ def render_card(guest, card_format="event"):
     )
 
     underline_y = dv_header_y + 72
-    draw.rectangle(
-        [dv_x, underline_y, dv_x + 80, underline_y + 4], fill=COLOR_GOLD
-    )
+    draw.rectangle([dv_x, underline_y, dv_x + 80, underline_y + 4], fill=COLOR_GOLD)
 
     draw.text(
         (dv_x, dv_header_y + 96),
@@ -355,15 +401,19 @@ def render_card(guest, card_format="event"):
         fill=COLOR_TEXT,
     )
 
-    # Issuer line at the bottom-right
-    issuer_text = "Sudanese Forum · 16 May 2026"
-    issuer_font = font(24)
-    iw = draw.textlength(issuer_text, font=issuer_font)
-    draw.text(
-        (CARD_W - iw - 90, qr_y + qr_size - 24),
-        issuer_text,
-        font=issuer_font,
-        fill=COLOR_GRAY,
-    )
+    # Issuer line from event config
+    issuer_bits = [
+        s for s in (cfg.get("title_primary", ""), cfg.get("date", "")) if s.strip()
+    ]
+    if issuer_bits:
+        issuer_text = " · ".join(issuer_bits)
+        issuer_font = text_font(24, False, issuer_text)
+        iw = draw.textlength(display_bidi(issuer_text), font=issuer_font)
+        draw.text(
+            (CARD_W - iw - 90, qr_y + qr_size - 24),
+            display_bidi(issuer_text),
+            font=issuer_font,
+            fill=COLOR_GRAY,
+        )
 
     return finalize_card_for_format(card, card_format)
