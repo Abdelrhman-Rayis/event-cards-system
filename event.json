@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "title_primary": "Sudanese Forum",
+  "title_secondary": "for the Homeland",
+  "title_primary_ar": "ملتقى السودانيين",
+  "title_secondary_ar": "من أجل الوطن",
+  "date": "Saturday, 16 May 2026",
+  "time": "18:00 – 23:00",
+  "location": "Manchester, UK",
+  "date_code": "20260516",
+  "languages": [
+    "en",
+    "ar"
+  ],
+  "fields": [
+    {
+      "id": "role",
+      "label": "Role",
+      "type": "text",
+      "show_on_card": true,
+      "default": "Guest",
+      "placeholder": "Speaker / متحدث"
+    },
+    {
+      "id": "ticket_type",
+      "label": "Ticket Type",
+      "type": "select",
+      "show_on_card": true,
+      "default": "Standard",
+      "options": [
+        "VIP Access",
+        "Standard",
+        "Press",
+        "Staff",
+        "Sponsor"
+      ]
+    },
+    {
+      "id": "companions",
+      "label": "Guests",
+      "type": "number",
+      "show_on_card": true,
+      "default": 0,
+      "min": 0,
+      "max": 10,
+      "hint": "Additional people allowed in with this guest.",
+      "display_format": "companion_label"
+    }
+  ],
+  "template": {
+    "id": "classic_navy_gold",
+    "overrides": {}
+  }
+}

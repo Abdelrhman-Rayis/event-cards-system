@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Style editor — {{ theme_name }}</title>
+  <style>
+    :root {
+      --primary: #0F4C5C; --primary-hover: #155F73;
+      --accent: #C9A14A;
+      --bg: #F7F8FA; --surface: #FFFFFF;
+      --text: #1F2937; --muted: #6B7280; --border: #E5E7EB;
+      --success: #047857; --success-bg: rgba(16,185,129,0.12);
+      --radius: 12px; --radius-sm: 8px; --tap: 44px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+      font-size: 15px; line-height: 1.5; color: var(--text);
+      background: var(--bg); -webkit-font-smoothing: antialiased;
+    }
+    h1, h2 { margin: 0; }
+    .hdr { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .hdr__inner {
+      max-width: 1280px; margin: 0 auto; padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .hdr__brand h1 { font-size: 17px; font-weight: 600; color: var(--primary); }
+    .hdr__brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+    .container { max-width: 1280px; margin: 0 auto; padding: 20px; }
+    @media (max-width: 480px) { .container { padding: 14px; } }
+
+    .saved-banner {
+      background: var(--success-bg); color: var(--success);
+      padding: 12px 16px; border-radius: var(--radius-sm);
+      margin-bottom: 16px; font-weight: 600; font-size: 14px;
+    }
+
+    .layout {
+      display: grid; gap: 20px;
+      grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+    }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+    }
+    .card__hdr { margin-bottom: 14px; }
+    .card__hdr h2 { font-size: 16px; font-weight: 600; }
+    .card__hdr p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+
+    .color-row {
+      display: grid; grid-template-columns: 56px 1fr 100px;
+      gap: 10px; align-items: center; padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .color-row:last-child { border-bottom: 0; }
+    .color-row input[type="color"] {
+      width: 56px; height: 40px; padding: 0; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); background: transparent; cursor: pointer;
+    }
+    .color-row__label { font-size: 13px; }
+    .color-row__label small {
+      display: block; font-family: ui-monospace, monospace;
+      font-size: 11px; color: var(--muted); margin-top: 2px;
+    }
+    .color-row input[type="text"] {
+      width: 100%; padding: 8px 10px; font: inherit;
+      font-family: ui-monospace, monospace; font-size: 12px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      text-transform: uppercase;
+    }
+    .color-row input[type="text"]:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15,76,92,0.12);
+    }
+
+    .preview {
+      background: #F0F1F4; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; text-align: center;
+      min-height: 400px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .preview img {
+      max-width: 100%; height: auto; border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      transition: opacity 0.15s;
+    }
+    .preview .loading { opacity: 0.5; }
+    .preview__empty { color: var(--muted); padding: 60px 20px; }
+
+    .actions {
+      display: flex; gap: 10px; align-items: center; justify-content: space-between;
+      margin-top: 16px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 0 16px; min-height: var(--tap); font: inherit;
+      font-weight: 600; font-size: 14px; border: 1px solid transparent;
+      border-radius: var(--radius-sm); cursor: pointer; text-decoration: none;
+    }
+    .btn--primary { background: var(--primary); color: white; }
+    .btn--primary:hover { background: var(--primary-hover); }
+    .btn--ghost { background: var(--surface); color: var(--primary); border-color: var(--border); }
+    .btn--ghost:hover { background: var(--bg); border-color: var(--primary); }
+    .btn--sm { min-height: 34px; padding: 0 12px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header class="hdr">
+    <div class="hdr__inner">
+      <div class="hdr__brand">
+        <h1>Style editor</h1>
+        <p>Base theme: {{ theme_name }} · changes save as overrides on top of it.</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a href="{{ url_for('setup.setup') }}" class="btn btn--ghost btn--sm">Event setup</a>
+        <a href="{{ url_for('guests.index') }}" class="btn btn--ghost btn--sm">← Back to guests</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    {% if saved %}<div class="saved-banner">Style saved to template.overrides.</div>{% endif %}
+
+    <div class="layout">
+      <form method="post" id="editor-form">
+        <section class="card">
+          <div class="card__hdr">
+            <h2>Colors</h2>
+            <p>Each control overrides one color slot. Reset to wipe overrides and fall back to the base theme.</p>
+          </div>
+          {% for row in color_rows %}
+          <div class="color-row">
+            <input type="color" value="{{ row.hex }}" data-key="{{ row.key }}">
+            <div class="color-row__label">
+              {{ row.label }}<small>{{ row.key }}</small>
+            </div>
+            <input type="text" name="color_{{ row.key }}" value="{{ row.hex }}" pattern="#[0-9A-Fa-f]{6}" maxlength="7" data-key="{{ row.key }}">
+          </div>
+          {% endfor %}
+          <div class="actions">
+            <button type="button" id="reset-btn" class="btn btn--ghost btn--sm">Reset to {{ theme_name }}</button>
+            <button type="submit" class="btn btn--primary">Save</button>
+          </div>
+        </section>
+      </form>
+
+      <section class="preview">
+        {% if preview_code %}
+          <img id="preview-img" alt="Live preview" src="{{ url_for('editor.preview') }}">
+        {% else %}
+          <div class="preview__empty">Add at least one guest to enable the live preview.</div>
+        {% endif %}
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      var form = document.getElementById('editor-form');
+      var img = document.getElementById('preview-img');
+      var resetBtn = document.getElementById('reset-btn');
+      if (!form) return;
+
+      // Initial defaults from current rendered theme (so Reset works after edits).
+      var defaults = {};
+      form.querySelectorAll('input[type="color"]').forEach(function(c){
+        defaults[c.dataset.key] = c.value.toUpperCase();
+      });
+
+      // Color picker ↔ hex text input sync.
+      form.querySelectorAll('input[type="color"]').forEach(function(c){
+        c.addEventListener('input', function(){
+          var hex = c.value.toUpperCase();
+          var t = form.querySelector('input[type="text"][data-key="' + c.dataset.key + '"]');
+          if (t) t.value = hex;
+          schedulePreview();
+        });
+      });
+      form.querySelectorAll('input[type="text"][data-key]').forEach(function(t){
+        t.addEventListener('input', function(){
+          var v = t.value.trim();
+          if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+            var c = form.querySelector('input[type="color"][data-key="' + t.dataset.key + '"]');
+            if (c) c.value = v;
+            schedulePreview();
+          }
+        });
+      });
+
+      var debounceTimer = null;
+      function schedulePreview() {
+        if (!img) return;
+        clearTimeout(debounceTimer);
+        img.classList.add('loading');
+        debounceTimer = setTimeout(updatePreview, 250);
+      }
+
+      function updatePreview() {
+        if (!img) return;
+        var qs = [];
+        form.querySelectorAll('input[type="text"][data-key]').forEach(function(t){
+          if (/^#[0-9A-Fa-f]{6}$/.test(t.value)) {
+            qs.push('color_' + t.dataset.key + '=' + encodeURIComponent(t.value));
+          }
+        });
+        var url = '{{ url_for("editor.preview") }}?' + qs.join('&') + '&_t=' + Date.now();
+        var probe = new Image();
+        probe.onload = function(){
+          img.src = url;
+          img.classList.remove('loading');
+        };
+        probe.onerror = function(){ img.classList.remove('loading'); };
+        probe.src = url;
+      }
+
+      if (resetBtn) resetBtn.addEventListener('click', function(){
+        Object.keys(defaults).forEach(function(k){
+          var c = form.querySelector('input[type="color"][data-key="' + k + '"]');
+          var t = form.querySelector('input[type="text"][data-key="' + k + '"]');
+          if (c) c.value = defaults[k];
+          if (t) t.value = defaults[k];
+        });
+        // Note: this only resets the form inputs. Click Save to drop overrides
+        // entirely (server detects when colors == base theme).
+        schedulePreview();
+      });
+    })();
+  </script>
+</body>
+</html>
