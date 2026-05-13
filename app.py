@@ -507,7 +507,7 @@ def render_card(guest, card_format="event"):
     qr.add_data(guest["id"])
     qr.make(fit=True)
     qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
-    qr_size = 280
+    qr_size = 360
     qr_x = 110
     qr_y = footer_y
     qr_img = qr_img.resize((qr_size, qr_size), Image.NEAREST)
@@ -515,28 +515,29 @@ def render_card(guest, card_format="event"):
     draw.rectangle([qr_x - 3, qr_y - 3, qr_x + qr_size + 2, qr_y + qr_size + 2],
                    outline=COLOR_DIVIDER, width=2)
 
-    # Serial code, monospace, centered under QR
-    serial_font = mono_font(28, bold=True)
-    serial_w = draw.textlength(guest["id"], font=serial_font)
-    draw.text((qr_x + (qr_size - serial_w) // 2, qr_y + qr_size + 18),
-              guest["id"], font=serial_font, fill=COLOR_GRAY)
+    # Right-of-QR column: serial code, then door-verification block
+    dv_x = qr_x + qr_size + 70
+    dv_top = qr_y + 6
 
-    # Door verification (paired to the right of QR)
-    dv_x = qr_x + qr_size + 80
-    dv_top = qr_y + 8
+    # Ticket ID label + serial code (monospace, prominent)
+    draw.text((dv_x, dv_top), "TICKET ID", font=font(28), fill=COLOR_GRAY)
+    serial_font = mono_font(46, bold=True)
+    draw.text((dv_x, dv_top + 40), guest["id"],
+              font=serial_font, fill=COLOR_DARK)
 
-    draw_lock(draw, dv_x, dv_top + 6, 52, COLOR_DARK)
-    draw.text((dv_x + 70, dv_top), "DOOR VERIFICATION",
+    # DOOR VERIFICATION block
+    dv_header_y = dv_top + 140
+    draw_lock(draw, dv_x, dv_header_y + 6, 52, COLOR_DARK)
+    draw.text((dv_x + 70, dv_header_y), "DOOR VERIFICATION",
               font=font(44, bold=True), fill=COLOR_DARK)
 
-    # Accent bar under header
-    underline_y = dv_top + 72
+    underline_y = dv_header_y + 72
     draw.rectangle([dv_x, underline_y, dv_x + 80, underline_y + 4], fill=COLOR_GOLD)
 
-    draw.text((dv_x, dv_top + 96),
+    draw.text((dv_x, dv_header_y + 96),
               "Scan this code at entry.",
               font=font(34), fill=COLOR_TEXT)
-    draw.text((dv_x, dv_top + 146),
+    draw.text((dv_x, dv_header_y + 146),
               "Valid for one entry only.",
               font=font(34), fill=COLOR_TEXT)
 
