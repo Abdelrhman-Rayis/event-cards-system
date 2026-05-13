@@ -1175,14 +1175,28 @@ VERIFY_HTML = r"""
         }
         scanBtn.style.display = 'none';
         wrap.style.display = 'block';
-        scanner = new Html5Qrcode('reader');
-        const config = {
-          fps: 10,
-          qrbox: { width: 280, height: 140 },
+        scanner = new Html5Qrcode('reader', {
           formatsToSupport: [
             Html5QrcodeSupportedFormats.CODE_128,
             Html5QrcodeSupportedFormats.QR_CODE
-          ]
+          ],
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+          useBarCodeDetectorIfSupported: true
+        });
+        const config = {
+          fps: 15,
+          qrbox: (vw, vh) => {
+            const w = Math.min(Math.floor(vw * 0.92), 520);
+            const h = Math.max(140, Math.floor(Math.min(vw, vh) * 0.42));
+            return { width: w, height: h };
+          },
+          aspectRatio: 1.7,
+          videoConstraints: {
+            facingMode: 'environment',
+            focusMode: 'continuous',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
         };
         try {
           await scanner.start({ facingMode: 'environment' }, config, (text) => {
