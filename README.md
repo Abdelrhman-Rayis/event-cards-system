@@ -1,6 +1,8 @@
 # Event Cards System (ECS)
 
-Bilingual (Arabic / English) Flask app for generating event guest cards with scannable Code 128 barcodes and a door-verification flow. Built for the **Sudanese Forum for the Homeland** (Manchester, May 2026).
+Bilingual (Arabic / English) Flask app for generating event guest cards with scannable QR codes and a door-verification flow. Built for the **Sudanese Forum for the Homeland** (Manchester, May 2026).
+
+![Guest management screen](docs/screenshot.png)
 
 ## Features
 
@@ -10,8 +12,8 @@ Bilingual (Arabic / English) Flask app for generating event guest cards with sca
   - A4 or Letter print sheets, multiple cards per page with dashed cut lines
   - CR80 conference-badge size (3.375" × 2.125") or full event-card size
   - One card per page, or several cards per sheet
-- **Code 128 barcodes** — every guest gets a unique `EVT-YYYYMMDD-XXXXX` code.
-- **Door verification** — security scans the barcode (camera or USB scanner), sees the guest's photo and details; each code is single-use to prevent reuse.
+- **QR codes** — every guest gets a unique `EVT-YYYYMMDD-XXXXX` code, rendered as a QR for reliable phone-camera scanning.
+- **Door verification** — security scans the QR (camera or USB scanner), sees the guest's photo and details; each code is single-use to prevent reuse.
 - **Modern flat, mobile-first UI** — sticky header, 44 px tap targets, responsive layout.
 - **Localhost-only by default** — the dev server binds to `127.0.0.1`, not your LAN.
 
@@ -63,7 +65,7 @@ Swap the strings, drop your logo at `static/logo.png`, restart the server.
 
 - **Flask** — single-file server
 - **Pillow** — card rendering
-- **python-barcode** — Code 128 generation
+- **qrcode** — QR code generation
 - **arabic-reshaper** + **python-bidi** — Arabic script handling
 - **html5-qrcode** (CDN) — in-browser camera scanning
 
