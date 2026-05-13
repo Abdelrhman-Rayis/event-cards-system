@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Event Setup — {{ cfg.title_primary }}</title>
+  <style>
+    :root {
+      --primary: #0F4C5C; --primary-hover: #155F73;
+      --accent: #C9A14A; --accent-hover: #B68E3E;
+      --bg: #F7F8FA; --surface: #FFFFFF;
+      --text: #1F2937; --muted: #6B7280; --border: #E5E7EB;
+      --success: #047857; --success-bg: rgba(16,185,129,0.12);
+      --danger: #DC2626; --danger-bg: rgba(220,38,38,0.08);
+      --radius: 12px; --radius-sm: 8px; --tap: 44px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+      font-size: 15px; line-height: 1.5; color: var(--text);
+      background: var(--bg); -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 { margin: 0; }
+    .hdr { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .hdr__inner {
+      max-width: 980px; margin: 0 auto; padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .hdr__brand h1 { font-size: 17px; font-weight: 600; color: var(--primary); }
+    .hdr__brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+
+    .container { max-width: 980px; margin: 0 auto; padding: 20px; }
+    @media (max-width: 480px) { .container { padding: 14px; } }
+
+    .saved-banner {
+      background: var(--success-bg); color: var(--success);
+      padding: 12px 16px; border-radius: var(--radius-sm);
+      margin-bottom: 16px; font-weight: 600; font-size: 14px;
+    }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+    }
+    .card__hdr { margin-bottom: 16px; }
+    .card__hdr h2 { font-size: 17px; font-weight: 600; color: var(--text); }
+    .card__hdr p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+
+    .row { display: grid; gap: 14px; }
+    .row--2 { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 600px) { .row--2 { grid-template-columns: 1fr; } }
+
+    .field { display: block; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 700; color: var(--muted);
+      margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .input, .select, textarea {
+      width: 100%; padding: 11px 12px; font: inherit; color: inherit;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input:focus, .select:focus, textarea:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15,76,92,0.12);
+    }
+    .input, .select { unicode-bidi: plaintext; }
+    textarea { min-height: 70px; resize: vertical; font-family: inherit; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+    .check {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); cursor: pointer; user-select: none;
+      background: var(--surface); transition: border-color 0.15s, background 0.15s;
+    }
+    .check input { margin: 0; }
+    .check:has(input:checked) {
+      border-color: var(--primary); background: rgba(15,76,92,0.06);
+      color: var(--primary); font-weight: 600;
+    }
+    .checks { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 0 16px; min-height: var(--tap); font: inherit;
+      font-weight: 600; font-size: 14px; border: 1px solid transparent;
+      border-radius: var(--radius-sm); cursor: pointer; text-decoration: none;
+    }
+    .btn--primary { background: var(--primary); color: white; }
+    .btn--primary:hover { background: var(--primary-hover); }
+    .btn--ghost { background: var(--surface); color: var(--primary); border-color: var(--border); }
+    .btn--ghost:hover { background: var(--bg); border-color: var(--primary); }
+    .btn--sm { min-height: 34px; padding: 0 12px; font-size: 13px; }
+    .btn--danger { background: transparent; color: var(--danger); border-color: var(--border); }
+    .btn--danger:hover { background: var(--danger-bg); border-color: var(--danger); }
+
+    /* Fields editor */
+    .fld {
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 16px; margin-bottom: 12px; background: var(--bg);
+    }
+    .fld__hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 12px;
+    }
+    .fld__hdr h3 { font-size: 14px; color: var(--text); font-weight: 600; }
+    .fld__row { display: grid; grid-template-columns: 1fr 1fr 140px; gap: 10px; }
+    @media (max-width: 600px) { .fld__row { grid-template-columns: 1fr; } }
+    .fld__row + .fld__row { margin-top: 10px; }
+    .fld__sub { display: none; margin-top: 10px; }
+    .fld[data-type="select"] .fld__sub--select { display: block; }
+    .fld[data-type="number"] .fld__sub--number { display: block; }
+
+    /* Themes */
+    .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .theme {
+      display: block; cursor: pointer; border: 2px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px; background: var(--surface);
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .theme:hover { border-color: var(--primary); }
+    .theme input { display: none; }
+    .theme:has(input:checked) {
+      border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15,76,92,0.12);
+    }
+    .theme__name { font-weight: 600; color: var(--text); font-size: 14px; }
+    .theme__id { font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; margin-top: 2px; }
+    .theme__desc { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+
+    .actions {
+      display: flex; gap: 10px; align-items: center; justify-content: space-between;
+      padding: 16px 24px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      position: sticky; bottom: 16px; z-index: 5;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+  </style>
+</head>
+<body>
+  <header class="hdr">
+    <div class="hdr__inner">
+      <div class="hdr__brand">
+        <h1>Event setup</h1>
+        <p>Edit event details, ticket fields, and card template.</p>
+      </div>
+      <a href="{{ url_for('guests.index') }}" class="btn btn--ghost btn--sm">← Back to guests</a>
+    </div>
+  </header>
+
+  <main class="container">
+    {% if saved %}<div class="saved-banner">Settings saved.</div>{% endif %}
+
+    <form method="post">
+
+      <!-- ============== EVENT BASICS ============== -->
+      <section class="card">
+        <div class="card__hdr">
+          <h2>1 · Event basics</h2>
+          <p>The titles and metadata that appear on every card.</p>
+        </div>
+
+        <div class="row row--2">
+          <div class="field">
+            <label for="f-tp">Title (primary)</label>
+            <input id="f-tp" type="text" name="title_primary" class="input"
+                   value="{{ cfg.title_primary|default('', true) }}" dir="auto"
+                   placeholder="Annual Tech Summit">
+          </div>
+          <div class="field">
+            <label for="f-ts">Title (secondary)</label>
+            <input id="f-ts" type="text" name="title_secondary" class="input"
+                   value="{{ cfg.title_secondary|default('', true) }}" dir="auto"
+                   placeholder="2026 Edition">
+          </div>
+        </div>
+
+        <div class="row row--2" style="margin-top: 14px;">
+          <div class="field">
+            <label for="f-tpa">Title — Arabic (primary)</label>
+            <input id="f-tpa" type="text" name="title_primary_ar" class="input"
+                   value="{{ cfg.title_primary_ar|default('', true) }}" dir="auto" lang="ar"
+                   placeholder="Leave blank for English-only events">
+          </div>
+          <div class="field">
+            <label for="f-tsa">Title — Arabic (secondary)</label>
+            <input id="f-tsa" type="text" name="title_secondary_ar" class="input"
+                   value="{{ cfg.title_secondary_ar|default('', true) }}" dir="auto" lang="ar">
+          </div>
+        </div>
+
+        <div class="row row--2" style="margin-top: 14px;">
+          <div class="field">
+            <label for="f-date">Date (display)</label>
+            <input id="f-date" type="text" name="date" class="input"
+                   value="{{ cfg.date|default('', true) }}"
+                   placeholder="Saturday, 16 May 2026">
+          </div>
+          <div class="field">
+            <label for="f-time">Time</label>
+            <input id="f-time" type="text" name="time" class="input"
+                   value="{{ cfg.time|default('', true) }}"
+                   placeholder="18:00 – 23:00">
+          </div>
+        </div>
+
+        <div class="row row--2" style="margin-top: 14px;">
+          <div class="field">
+            <label for="f-loc">Location</label>
+            <input id="f-loc" type="text" name="location" class="input"
+                   value="{{ cfg.location|default('', true) }}" dir="auto"
+                   placeholder="Manchester, UK">
+          </div>
+          <div class="field">
+            <label for="f-dc">Date code (ID prefix)</label>
+            <input id="f-dc" type="text" name="date_code" class="input"
+                   value="{{ cfg.date_code|default('', true) }}"
+                   placeholder="20260516" pattern="[0-9]+">
+            <div class="hint">YYYYMMDD — used in the printed ticket ID.</div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top: 14px;">
+          <label>Languages on cards</label>
+          <div class="checks">
+            <label class="check">
+              <input type="checkbox" name="languages" value="en"
+                {% if 'en' in cfg.languages %}checked{% endif %}>
+              English
+            </label>
+            <label class="check">
+              <input type="checkbox" name="languages" value="ar"
+                {% if 'ar' in cfg.languages %}checked{% endif %}>
+              Arabic (RTL)
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== FIELDS ============== -->
+      <section class="card">
+        <div class="card__hdr">
+          <h2>2 · Ticket fields</h2>
+          <p>Define the per-guest fields shown on the ticket. Name &amp; photo are always included.</p>
+        </div>
+
+        <div id="fields-list">
+          {% for f in cfg.fields %}
+          <div class="fld" data-type="{{ f.type }}" data-idx="{{ loop.index0 }}">
+            <div class="fld__hdr">
+              <h3>Field #<span class="fld__num">{{ loop.index }}</span></h3>
+              <button type="button" class="btn btn--danger btn--sm" data-remove>Remove</button>
+            </div>
+            <div class="fld__row">
+              <div class="field">
+                <label>ID (lowercase, no spaces)</label>
+                <input type="text" class="input" name="fields[{{ loop.index0 }}][id]"
+                       value="{{ f.id }}" required pattern="[a-z_][a-z0-9_]*">
+              </div>
+              <div class="field">
+                <label>Label</label>
+                <input type="text" class="input" name="fields[{{ loop.index0 }}][label]"
+                       value="{{ f.label }}" required>
+              </div>
+              <div class="field">
+                <label>Type</label>
+                <select class="select" name="fields[{{ loop.index0 }}][type]" data-type-select>
+                  <option value="text"   {% if f.type=='text' %}selected{% endif %}>Text</option>
+                  <option value="select" {% if f.type=='select' %}selected{% endif %}>Dropdown</option>
+                  <option value="number" {% if f.type=='number' %}selected{% endif %}>Number</option>
+                </select>
+              </div>
+            </div>
+            <div class="fld__row">
+              <div class="field">
+                <label>Default value</label>
+                <input type="text" class="input" name="fields[{{ loop.index0 }}][default]"
+                       value="{{ f.default if f.default is not none else '' }}">
+              </div>
+              <div class="field">
+                <label>Hint (optional)</label>
+                <input type="text" class="input" name="fields[{{ loop.index0 }}][hint]"
+                       value="{{ f.hint|default('', true) }}">
+              </div>
+              <div class="field">
+                <label>Show on card</label>
+                <label class="check" style="margin-top: 4px;">
+                  <input type="checkbox" name="fields[{{ loop.index0 }}][show_on_card]"
+                    {% if f.show_on_card %}checked{% endif %}>
+                  Visible
+                </label>
+              </div>
+            </div>
+            <div class="fld__sub fld__sub--select">
+              <div class="field">
+                <label>Options (one per line)</label>
+                <textarea name="fields[{{ loop.index0 }}][options_text]"
+                          placeholder="VIP&#10;Standard&#10;Press">{{ (f.options or [])|join('\n') }}</textarea>
+              </div>
+            </div>
+            <div class="fld__sub fld__sub--number">
+              <div class="row row--2">
+                <div class="field">
+                  <label>Min</label>
+                  <input type="number" class="input" name="fields[{{ loop.index0 }}][min]"
+                         value="{{ f.min if f.min is defined else 0 }}">
+                </div>
+                <div class="field">
+                  <label>Max</label>
+                  <input type="number" class="input" name="fields[{{ loop.index0 }}][max]"
+                         value="{{ f.max if f.max is defined else 10 }}">
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <button type="button" id="add-field" class="btn btn--ghost btn--sm">+ Add field</button>
+
+        <template id="field-template">
+          <div class="fld" data-type="text" data-idx="__IDX__">
+            <div class="fld__hdr">
+              <h3>Field #<span class="fld__num">__NUM__</span></h3>
+              <button type="button" class="btn btn--danger btn--sm" data-remove>Remove</button>
+            </div>
+            <div class="fld__row">
+              <div class="field">
+                <label>ID (lowercase, no spaces)</label>
+                <input type="text" class="input" name="fields[__IDX__][id]" required pattern="[a-z_][a-z0-9_]*">
+              </div>
+              <div class="field">
+                <label>Label</label>
+                <input type="text" class="input" name="fields[__IDX__][label]" required>
+              </div>
+              <div class="field">
+                <label>Type</label>
+                <select class="select" name="fields[__IDX__][type]" data-type-select>
+                  <option value="text" selected>Text</option>
+                  <option value="select">Dropdown</option>
+                  <option value="number">Number</option>
+                </select>
+              </div>
+            </div>
+            <div class="fld__row">
+              <div class="field">
+                <label>Default value</label>
+                <input type="text" class="input" name="fields[__IDX__][default]">
+              </div>
+              <div class="field">
+                <label>Hint (optional)</label>
+                <input type="text" class="input" name="fields[__IDX__][hint]">
+              </div>
+              <div class="field">
+                <label>Show on card</label>
+                <label class="check" style="margin-top: 4px;">
+                  <input type="checkbox" name="fields[__IDX__][show_on_card]" checked>
+                  Visible
+                </label>
+              </div>
+            </div>
+            <div class="fld__sub fld__sub--select">
+              <div class="field">
+                <label>Options (one per line)</label>
+                <textarea name="fields[__IDX__][options_text]" placeholder="Option 1&#10;Option 2"></textarea>
+              </div>
+            </div>
+            <div class="fld__sub fld__sub--number">
+              <div class="row row--2">
+                <div class="field"><label>Min</label><input type="number" class="input" name="fields[__IDX__][min]" value="0"></div>
+                <div class="field"><label>Max</label><input type="number" class="input" name="fields[__IDX__][max]" value="10"></div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <!-- ============== TEMPLATE ============== -->
+      <section class="card">
+        <div class="card__hdr">
+          <h2>3 · Card template</h2>
+          <p>Pick a starting palette. You can fine-tune colors later in the style editor.</p>
+        </div>
+
+        <div class="themes">
+          {% for tid, tname, tdesc in themes %}
+          <label class="theme">
+            <input type="radio" name="template_id" value="{{ tid }}"
+              {% if (cfg.template.id or 'classic_navy_gold') == tid %}checked{% endif %}>
+            <div class="theme__name">{{ tname }}</div>
+            <div class="theme__id">{{ tid }}</div>
+            <div class="theme__desc">{{ tdesc }}</div>
+          </label>
+          {% endfor %}
+        </div>
+      </section>
+
+      <div class="actions">
+        <span class="hint">Changes apply to all new cards immediately.</span>
+        <button type="submit" class="btn btn--primary">Save settings</button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    (function(){
+      var list = document.getElementById('fields-list');
+      var tpl = document.getElementById('field-template');
+      var addBtn = document.getElementById('add-field');
+
+      function reindex() {
+        var rows = list.querySelectorAll('.fld');
+        rows.forEach(function(row, i){
+          row.dataset.idx = i;
+          row.querySelector('.fld__num').textContent = (i + 1);
+          row.querySelectorAll('[name^="fields["]').forEach(function(inp){
+            inp.name = inp.name.replace(/^fields\[\d+\]/, 'fields[' + i + ']');
+          });
+        });
+      }
+
+      function bindRow(row) {
+        var rm = row.querySelector('[data-remove]');
+        if (rm) rm.addEventListener('click', function(){
+          row.remove();
+          reindex();
+        });
+        var ts = row.querySelector('[data-type-select]');
+        if (ts) ts.addEventListener('change', function(){
+          row.dataset.type = ts.value;
+        });
+      }
+
+      list.querySelectorAll('.fld').forEach(bindRow);
+
+      addBtn.addEventListener('click', function(){
+        var idx = list.querySelectorAll('.fld').length;
+        var html = tpl.innerHTML
+          .replace(/__IDX__/g, idx)
+          .replace(/__NUM__/g, idx + 1);
+        var wrap = document.createElement('div');
+        wrap.innerHTML = html.trim();
+        var node = wrap.firstChild;
+        list.appendChild(node);
+        bindRow(node);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -18,33 +18,33 @@
       "label": "Role",
       "type": "text",
       "show_on_card": true,
-      "placeholder": "Speaker / متحدث",
-      "default": "Guest"
+      "default": "Guest",
+      "placeholder": "Speaker / متحدث"
     },
     {
       "id": "ticket_type",
       "label": "Ticket Type",
       "type": "select",
       "show_on_card": true,
+      "default": "Standard",
       "options": [
         "VIP Access",
         "Standard",
         "Press",
         "Staff",
         "Sponsor"
-      ],
-      "default": "Standard"
+      ]
     },
     {
       "id": "companions",
       "label": "Guests",
       "type": "number",
       "show_on_card": true,
+      "default": 0,
       "min": 0,
       "max": 10,
-      "default": 0,
-      "display_format": "companion_label",
-      "hint": "Additional people allowed in with this guest."
+      "hint": "Additional people allowed in with this guest.",
+      "display_format": "companion_label"
     }
   ],
   "template": {

@@ -5,6 +5,7 @@ from flask import Flask
 from . import config
 from .routes.cards import cards_bp
 from .routes.guests import guests_bp
+from .routes.setup import setup_bp
 from .routes.verify import verify_bp
 
 
@@ -19,5 +20,6 @@ def create_app():
     app.register_blueprint(guests_bp)
     app.register_blueprint(cards_bp)
     app.register_blueprint(verify_bp)
+    app.register_blueprint(setup_bp)
 
     return app

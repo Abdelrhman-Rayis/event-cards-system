@@ -194,7 +194,10 @@
         <h1>Guest Cards</h1>
         <p>{{ event.title_en_l1 }} {{ event.title_en_l2 }} · {{ event.date }} · {{ event.location }}</p>
       </div>
-      <a href="{{ url_for('verify.verify') }}" class="btn btn--ghost btn--sm">Door verification →</a>
+      <div style="display: flex; gap: 8px;">
+        <a href="{{ url_for('setup.setup') }}" class="btn btn--ghost btn--sm">Event setup</a>
+        <a href="{{ url_for('verify.verify') }}" class="btn btn--ghost btn--sm">Door verification →</a>
+      </div>
     </div>
   </header>
 
