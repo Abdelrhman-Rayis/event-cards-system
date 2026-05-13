@@ -29,8 +29,7 @@ from pathlib import Path
 from flask import (Flask, abort, redirect, render_template_string, request,
                    send_file, send_from_directory, url_for)
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-import barcode
-from barcode.writer import ImageWriter
+import qrcode
 import arabic_reshaper
 from bidi.algorithm import get_display
 
@@ -64,7 +63,7 @@ EVENT = {
 
 # ----------------- Card visual constants -----------------
 
-CARD_W, CARD_H = 1950, 1260
+CARD_W, CARD_H = 1950, 1320
 # ISO CR80 / common conference badge insert, landscape, at 300 dpi (3.375" × 2.125")
 CONFERENCE_CARD_W = int(round(3.375 * 300))
 CONFERENCE_CARD_H = int(round(2.125 * 300))
@@ -480,25 +479,23 @@ def render_card(guest, card_format="event"):
     # ---------- FOOTER ----------
     footer_y = div_y + 40
 
-    # Barcode
-    bc = barcode.get("code128", guest["id"], writer=ImageWriter())
-    bc_buf = io.BytesIO()
-    bc.write(bc_buf, options={
-        "write_text": False,
-        "module_height": 16,
-        "module_width": 0.35,
-        "quiet_zone": 2,
-    })
-    bc_buf.seek(0)
-    bc_img = Image.open(bc_buf).convert("RGB")
-    target_w = 820
-    target_h = int(bc_img.height * (target_w / bc_img.width))
-    bc_img = bc_img.resize((target_w, target_h), Image.LANCZOS)
-    card.paste(bc_img, (110, footer_y))
+    # QR code
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=2,
+    )
+    qr.add_data(guest["id"])
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+    qr_size = 240
+    qr_img = qr_img.resize((qr_size, qr_size), Image.NEAREST)
+    card.paste(qr_img, (110, footer_y))
 
-    code_font = font(42, bold=True)
+    code_font = font(36, bold=True)
     code_w = draw.textlength(guest["id"], font=code_font)
-    draw.text((110 + (target_w - code_w) // 2, footer_y + target_h + 18),
+    draw.text((110 + (qr_size - code_w) // 2, footer_y + qr_size + 14),
               guest["id"], font=code_font, fill=COLOR_TEXT)
 
     # Door verification (right)
@@ -1176,21 +1173,15 @@ VERIFY_HTML = r"""
         scanBtn.style.display = 'none';
         wrap.style.display = 'block';
         scanner = new Html5Qrcode('reader', {
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.QR_CODE
-          ],
-          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-          useBarCodeDetectorIfSupported: true
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true }
         });
         const config = {
           fps: 15,
           qrbox: (vw, vh) => {
-            const w = Math.min(Math.floor(vw * 0.92), 520);
-            const h = Math.max(140, Math.floor(Math.min(vw, vh) * 0.42));
-            return { width: w, height: h };
+            const s = Math.floor(Math.min(vw, vh) * 0.7);
+            return { width: s, height: s };
           },
-          aspectRatio: 1.7,
           videoConstraints: {
             facingMode: 'environment',
             focusMode: 'continuous',
