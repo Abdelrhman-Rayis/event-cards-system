@@ -64,7 +64,7 @@ EVENT = {
 
 # ----------------- Card visual constants -----------------
 
-CARD_W, CARD_H = 1950, 1350
+CARD_W, CARD_H = 1950, 1200
 # ISO CR80 / common conference badge insert, landscape, at 300 dpi (3.375" × 2.125")
 CONFERENCE_CARD_W = int(round(3.375 * 300))
 CONFERENCE_CARD_H = int(round(2.125 * 300))
@@ -321,7 +321,7 @@ def _header_logo_image():
         return _logo_cache_image
     try:
         im = Image.open(path).convert("RGBA")
-        max_h = 118
+        max_h = 200
         sc = min(1.0, max_h / max(im.height, 1))
         nw = max(1, int(im.width * sc))
         nh = max(1, int(im.height * sc))
@@ -352,37 +352,37 @@ def _paste_header_logo(card):
 
 def render_header(card):
     """Bilingual title on a cream strip, then a thin row with date/time/location."""
-    top_h = 240
+    top_h = 290
     draw = ImageDraw.Draw(card)
     draw.rectangle([0, 0, CARD_W, top_h], fill=BG_CREAM)
 
     en_x = _paste_header_logo(card)
     draw = ImageDraw.Draw(card)
 
-    title_font = font(60, bold=True)
+    title_font = font(86, bold=True)
     draw.text((en_x, 60), EVENT["title_en_l1"], font=title_font, fill=COLOR_DARK)
-    draw.text((en_x, 130), EVENT["title_en_l2"], font=title_font, fill=COLOR_DARK)
+    draw.text((en_x, 165), EVENT["title_en_l2"], font=title_font, fill=COLOR_DARK)
 
-    ar_title_font = ar_font(62, bold=True)
+    ar_title_font = ar_font(88, bold=True)
     for i, line in enumerate([EVENT["title_ar_l1"], EVENT["title_ar_l2"]]):
         txt = ar_shape(line)
         w = draw.textlength(txt, font=ar_title_font)
-        draw.text((CARD_W - 100 - w, 60 + i * 70), txt, font=ar_title_font, fill=COLOR_DARK)
+        draw.text((CARD_W - 100 - w, 60 + i * 105), txt, font=ar_title_font, fill=COLOR_DARK)
 
     # Event info strip (date · time · location)
-    info_strip_h = 90
+    info_strip_h = 100
     draw.rectangle([0, top_h, CARD_W, top_h + info_strip_h], fill=BG_CREAM)
     draw.line([(0, top_h + info_strip_h), (CARD_W, top_h + info_strip_h)],
               fill=BG_HEADER_BORDER, width=2)
 
-    info_y = top_h + (info_strip_h - 38) // 2
-    info_font_obj = font(34)
+    info_y = top_h + (info_strip_h - 44) // 2
+    info_font_obj = font(44)
     text = EVENT["location"]
     text_w = int(draw.textlength(text, font=info_font_obj))
-    item_w = 38 + 14 + text_w
+    item_w = 44 + 14 + text_w
     x = (CARD_W - item_w) // 2
-    draw_pin(draw, x, info_y, 38, COLOR_DARK)
-    draw.text((x + 38 + 14, info_y + 2), text, font=info_font_obj, fill=COLOR_TEXT)
+    draw_pin(draw, x, info_y, 44, COLOR_DARK)
+    draw.text((x + 44 + 14, info_y + 2), text, font=info_font_obj, fill=COLOR_TEXT)
 
     return top_h + info_strip_h
 
@@ -395,7 +395,7 @@ def render_card(guest, card_format="event"):
 
     # ---------- BODY ----------
     body_top = header_h + 30
-    photo_size = 320
+    photo_size = 440
     photo_x = 110
     photo_y = body_top + 20
 
@@ -426,25 +426,25 @@ def render_card(guest, card_format="event"):
                   initials, font=ifont, fill=(170, 170, 170))
 
     # VERIFIED badge
-    badge_w, badge_h = 150, 44
+    badge_w, badge_h = 200, 56
     bx = photo_x + (photo_size - badge_w) // 2
-    by = photo_y + photo_size - badge_h - 14
-    draw.rounded_rectangle([bx, by, bx + badge_w, by + badge_h], radius=4, fill=COLOR_GOLD)
-    bfont = font(24, bold=True)
+    by = photo_y + photo_size - badge_h - 16
+    draw.rounded_rectangle([bx, by, bx + badge_w, by + badge_h], radius=6, fill=COLOR_GOLD)
+    bfont = font(30, bold=True)
     bw = draw.textlength("VERIFIED", font=bfont)
-    draw.text((bx + (badge_w - bw) // 2, by + 9), "VERIFIED", font=bfont, fill="white")
+    draw.text((bx + (badge_w - bw) // 2, by + 11), "VERIFIED", font=bfont, fill="white")
 
     # Right-side info column
-    info_x = photo_x + photo_size + 80
+    info_x = photo_x + photo_size + 90
 
-    draw.text((info_x, photo_y + 10), "GUEST NAME", font=font(28), fill=COLOR_GRAY)
+    draw.text((info_x, photo_y + 10), "GUEST NAME", font=font(36), fill=COLOR_GRAY)
     nm = guest.get("name", "") or ""
     name_max_w = float(CARD_W - info_x - 90)
-    name_f, name_disp, _ = fit_text_for_width(draw, nm, name_max_w, 92, True, min_size=34)
-    draw.text((info_x, photo_y + 50), name_disp, font=name_f, fill=COLOR_DARK)
+    name_f, name_disp, _ = fit_text_for_width(draw, nm, name_max_w, 124, True, min_size=64)
+    draw.text((info_x, photo_y + 64), name_disp, font=name_f, fill=COLOR_DARK)
 
-    col_label_y = photo_y + 200
-    col_value_y = photo_y + 240
+    col_label_y = photo_y + 268
+    col_value_y = photo_y + 318
     cols = [
         ("TICKET TYPE", guest.get("ticket_type", "Standard")),
         ("ROLE", guest.get("role", "Guest")),
@@ -454,17 +454,17 @@ def render_card(guest, card_format="event"):
     col_text_max_w = float(col_w - 24)
     for i, (label, value) in enumerate(cols):
         cx = info_x + i * col_w
-        draw.text((cx, col_label_y), label, font=font(28), fill=COLOR_GRAY)
+        draw.text((cx, col_label_y), label, font=font(36), fill=COLOR_GRAY)
         val = value if value is not None else ""
-        val_f, val_disp, _ = fit_text_for_width(draw, val, col_text_max_w, 42, True, min_size=18)
+        val_f, val_disp, _ = fit_text_for_width(draw, val, col_text_max_w, 60, True, min_size=32)
         draw.text((cx, col_value_y), val_disp, font=val_f, fill=COLOR_TEXT)
 
     # Secured line
-    sec_y = col_value_y + 92
-    draw.ellipse([info_x, sec_y + 7, info_x + 14, sec_y + 21], fill=COLOR_DARK)
-    draw.text((info_x + 26, sec_y),
+    sec_y = col_value_y + 110
+    draw.ellipse([info_x, sec_y + 8, info_x + 16, sec_y + 24], fill=COLOR_DARK)
+    draw.text((info_x + 28, sec_y),
               "SECURED  ·  HOLOGRAPHIC SEAL  ·  TAMPER-PROOF",
-              font=font(24), fill=COLOR_GRAY)
+              font=font(30), fill=COLOR_GRAY)
 
     # ---------- DASHED DIVIDER ----------
     div_y = photo_y + photo_size + 60
@@ -481,33 +481,33 @@ def render_card(guest, card_format="event"):
     bc_buf = io.BytesIO()
     bc.write(bc_buf, options={
         "write_text": False,
-        "module_height": 12,
+        "module_height": 16,
         "module_width": 0.35,
         "quiet_zone": 2,
     })
     bc_buf.seek(0)
     bc_img = Image.open(bc_buf).convert("RGB")
-    target_w = 760
+    target_w = 820
     target_h = int(bc_img.height * (target_w / bc_img.width))
     bc_img = bc_img.resize((target_w, target_h), Image.LANCZOS)
     card.paste(bc_img, (110, footer_y))
 
-    code_font = font(34, bold=True)
+    code_font = font(42, bold=True)
     code_w = draw.textlength(guest["id"], font=code_font)
     draw.text((110 + (target_w - code_w) // 2, footer_y + target_h + 18),
               guest["id"], font=code_font, fill=COLOR_TEXT)
 
     # Door verification (right)
-    dv_x = CARD_W - 700
-    draw_lock(draw, dv_x, footer_y + 4, 36, COLOR_DARK)
-    draw.text((dv_x + 52, footer_y), "DOOR VERIFICATION",
-              font=font(32, bold=True), fill=COLOR_DARK)
-    draw.text((dv_x, footer_y + 64),
+    dv_x = CARD_W - 760
+    draw_lock(draw, dv_x, footer_y + 6, 48, COLOR_DARK)
+    draw.text((dv_x + 66, footer_y), "DOOR VERIFICATION",
+              font=font(42, bold=True), fill=COLOR_DARK)
+    draw.text((dv_x, footer_y + 78),
               "Security scans this barcode at entry.",
-              font=font(26), fill=COLOR_TEXT)
-    draw.text((dv_x, footer_y + 102),
+              font=font(32), fill=COLOR_TEXT)
+    draw.text((dv_x, footer_y + 124),
               "Valid for one entry only.",
-              font=font(26), fill=COLOR_TEXT)
+              font=font(32), fill=COLOR_TEXT)
 
     return finalize_card_for_format(card, card_format)
 
