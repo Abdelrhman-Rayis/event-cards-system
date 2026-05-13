@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F4C5C">
+  <title>Door Verification</title>
+  <style>
+    :root {
+      --primary: #0F4C5C;
+      --primary-hover: #155F73;
+      --accent: #C9A14A;
+      --bg: #F7F8FA;
+      --surface: #FFFFFF;
+      --text: #1F2937;
+      --muted: #6B7280;
+      --border: #E5E7EB;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --tap: 48px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+      font-size: 15px; line-height: 1.5; color: var(--text);
+      background: var(--primary);
+      min-height: 100vh; min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap {
+      max-width: 480px; margin: 0 auto;
+      padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    }
+    h1 {
+      color: white; text-align: center; font-size: 22px;
+      font-weight: 600; margin: 0 0 20px;
+    }
+    .card {
+      background: var(--surface); border-radius: var(--radius); padding: 22px;
+    }
+    label {
+      display: block; font-size: 11px; font-weight: 700; color: var(--muted);
+      margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .code-input {
+      width: 100%; padding: 14px 14px; font-size: 18px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      letter-spacing: 0.04em; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .code-input:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15,76,92,0.12);
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 0 18px; min-height: var(--tap); font: inherit;
+      font-weight: 600; font-size: 15px; border: 1px solid transparent;
+      border-radius: var(--radius-sm); cursor: pointer; text-decoration: none;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+    .btn--block { width: 100%; }
+    .btn--primary { background: var(--primary); color: white; }
+    .btn--primary:hover { background: var(--primary-hover); }
+    .btn--ghost {
+      background: var(--surface); color: var(--primary); border-color: var(--border);
+    }
+    .btn--ghost:hover { background: var(--bg); }
+    .gap { margin-top: 10px; }
+    .result {
+      margin-top: 18px; padding: 22px 18px; border-radius: var(--radius);
+      text-align: center; border: 2px solid transparent;
+    }
+    .result--ok { background: #ECFDF5; border-color: #10B981; }
+    .result--warn { background: #FFFBEB; border-color: #F59E0B; }
+    .result--fail { background: #FEF2F2; border-color: #EF4444; }
+    .result__badge {
+      display: inline-block; padding: 7px 16px; border-radius: 100px;
+      font-weight: 700; font-size: 13px; letter-spacing: 0.04em; color: white;
+    }
+    .result--ok .result__badge { background: #047857; }
+    .result--warn .result__badge { background: #B45309; }
+    .result--fail .result__badge { background: #B91C1C; }
+    .result__photo {
+      width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
+      margin: 16px auto 0; display: block; border: 4px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .result__name {
+      font-size: 22px; font-weight: 700; color: var(--primary);
+      margin-top: 12px; unicode-bidi: plaintext;
+    }
+    .result__role {
+      font-size: 14px; color: var(--muted); margin-top: 4px; unicode-bidi: plaintext;
+    }
+    .result__ts {
+      font-size: 12px; color: var(--muted); margin-top: 10px;
+      font-family: ui-monospace, monospace;
+    }
+    .back-link {
+      display: block; text-align: center; margin-top: 18px;
+      color: rgba(255,255,255,0.85); text-decoration: none; font-size: 14px;
+    }
+    .back-link:hover { color: white; }
+    #reader-wrap { margin-top: 14px; }
+    #reader { width: 100%; border-radius: var(--radius-sm); overflow: hidden; }
+    code {
+      font-family: ui-monospace, monospace; background: rgba(0,0,0,0.04);
+      padding: 1px 5px; border-radius: 3px; font-size: 13px;
+    }
+  </style>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Door Verification</h1>
+    <div class="card">
+      <form method="post" autocomplete="off" id="verify-form">
+        <label for="code-input">Guest code</label>
+        <input type="text" name="code" id="code-input" class="code-input"
+               placeholder="Scan or type code…" dir="ltr" autocomplete="off" autofocus>
+        <button type="submit" class="btn btn--primary btn--block gap">Verify</button>
+      </form>
+      <button type="button" id="scan-btn" class="btn btn--ghost btn--block gap">Scan with camera</button>
+      <div id="reader-wrap" style="display:none;">
+        <div id="reader"></div>
+        <button type="button" id="stop-btn" class="btn btn--ghost btn--block gap">Cancel</button>
+      </div>
+      {% if result %}
+        {% if result.ok and result.already_checked_in %}
+          <div class="result result--warn">
+            <div class="result__badge">⚠ ALREADY CHECKED IN</div>
+            {% if result.guest.photo %}<img class="result__photo" src="{{ url_for('guests.photo', filename=result.guest.photo) }}">{% endif %}
+            <div class="result__name" dir="auto">{{ result.guest.name }}</div>
+            <div class="result__role" dir="auto">{{ result.guest.ticket_type }} · {{ result.guest.role }}</div>
+            <div class="result__ts">Entered at {{ result.guest.checked_in_at }}</div>
+          </div>
+        {% elif result.ok %}
+          <div class="result result--ok">
+            <div class="result__badge">✓ VERIFIED · WELCOME</div>
+            {% if result.guest.photo %}<img class="result__photo" src="{{ url_for('guests.photo', filename=result.guest.photo) }}">{% endif %}
+            <div class="result__name" dir="auto">{{ result.guest.name }}</div>
+            <div class="result__role" dir="auto">{{ result.guest.ticket_type }} · {{ result.guest.role }}</div>
+            <div class="result__role" dir="ltr">+{{ result.guest.companions }} {% if result.guest.companions == 1 %}Companion{% else %}Companions{% endif %}</div>
+          </div>
+        {% else %}
+          <div class="result result--fail">
+            <div class="result__badge">✗ INVALID CODE</div>
+            <p>No guest found for <code dir="ltr">{{ result.code }}</code></p>
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+    <a href="{{ url_for('guests.index') }}" class="back-link">← Manage guests</a>
+  </div>
+  <script>
+    (function () {
+      const scanBtn = document.getElementById('scan-btn');
+      const stopBtn = document.getElementById('stop-btn');
+      const wrap = document.getElementById('reader-wrap');
+      const input = document.getElementById('code-input');
+      const form = document.getElementById('verify-form');
+      let scanner = null;
+
+      function stopScanner() {
+        if (scanner) {
+          scanner.stop().then(() => scanner.clear()).catch(() => {});
+          scanner = null;
+        }
+        wrap.style.display = 'none';
+        scanBtn.style.display = '';
+      }
+
+      scanBtn.addEventListener('click', async () => {
+        if (!window.Html5Qrcode) {
+          alert('Scanner library failed to load. Check internet.');
+          return;
+        }
+        if (!window.isSecureContext) {
+          alert('Camera blocked: this page must be served over HTTPS (or via localhost) for the browser to grant camera access.');
+          return;
+        }
+        scanBtn.style.display = 'none';
+        wrap.style.display = 'block';
+        scanner = new Html5Qrcode('reader', {
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+        });
+        const config = {
+          fps: 15,
+          qrbox: (vw, vh) => {
+            const s = Math.floor(Math.min(vw, vh) * 0.7);
+            return { width: s, height: s };
+          },
+          videoConstraints: {
+            facingMode: 'environment',
+            focusMode: 'continuous',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        };
+        try {
+          await scanner.start({ facingMode: 'environment' }, config, (text) => {
+            input.value = text.trim().toUpperCase();
+            stopScanner();
+            form.submit();
+          }, () => { /* per-frame failures: ignore */ });
+        } catch (err) {
+          alert('Could not start camera: ' + err);
+          stopScanner();
+        }
+      });
+
+      stopBtn.addEventListener('click', stopScanner);
+    })();
+  </script>
+</body>
+</html>
