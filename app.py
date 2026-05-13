@@ -27,7 +27,7 @@ from datetime import datetime
 from pathlib import Path
 
 from flask import (Flask, abort, redirect, render_template_string, request,
-                   send_file, url_for)
+                   send_file, send_from_directory, url_for)
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import barcode
 from barcode.writer import ImageWriter
@@ -1251,12 +1251,9 @@ def delete(code):
     save_guests(guests)
     return redirect(url_for("index"))
 
-@app.route("/photo/<path:filename>")
+@app.route("/photo/<filename>")
 def photo(filename):
-    p = PHOTOS_DIR / filename
-    if not p.exists():
-        abort(404)
-    return send_file(p)
+    return send_from_directory(PHOTOS_DIR, filename)
 
 @app.route("/preview/<code>")
 def preview(code):
