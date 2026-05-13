@@ -13,15 +13,76 @@ from flask import (
     url_for,
 )
 
+from .. import config
 from ..config import EVENT, PHOTOS_DIR
-from ..models import gen_code, load_guests, save_guests
+from ..models import companions_label, gen_code, load_guests, save_guests
 
 guests_bp = Blueprint("guests", __name__)
 
 
+def _coerce_field_value(field, raw):
+    """Convert a form string to the storage type declared by the field schema."""
+    ftype = field.get("type", "text")
+    default = field.get("default", "")
+    if ftype == "number":
+        try:
+            v = int(raw if raw not in (None, "") else default or 0)
+        except (TypeError, ValueError):
+            v = 0
+        lo = field.get("min")
+        hi = field.get("max")
+        if lo is not None:
+            v = max(int(lo), v)
+        if hi is not None:
+            v = min(int(hi), v)
+        return v
+    if ftype == "select":
+        options = field.get("options") or []
+        v = (raw or "").strip()
+        if v in options:
+            return v
+        if default in options:
+            return default
+        return options[0] if options else v
+    return (raw or "").strip() or (default or "")
+
+
+def _format_field_value(field, value):
+    """Mirror the renderer's display logic for the guest list."""
+    if value is None or value == "":
+        return ""
+    fmt = field.get("display_format")
+    if fmt == "companion_label":
+        try:
+            return companions_label(int(value))
+        except (TypeError, ValueError):
+            return str(value)
+    if field.get("type") == "number":
+        try:
+            return f"+{int(value)}"
+        except (TypeError, ValueError):
+            return str(value)
+    return str(value)
+
+
+def _displayable_fields(cfg):
+    """Fields the index page should render — both in the add-form and the list."""
+    return [f for f in cfg.get("fields", []) if f.get("id") not in ("name", "photo")]
+
+
 @guests_bp.route("/")
 def index():
-    return render_template("index.html", guests=load_guests(), event=EVENT)
+    cfg = config.CONFIG
+    fields = _displayable_fields(cfg)
+    guests = load_guests()
+    return render_template(
+        "index.html",
+        guests=guests,
+        event=EVENT,
+        cfg=cfg,
+        fields=fields,
+        format_value=_format_field_value,
+    )
 
 
 @guests_bp.route("/add", methods=["POST"])
@@ -29,14 +90,6 @@ def add():
     name = request.form.get("name", "").strip()
     if not name:
         return redirect(url_for("guests.index"))
-
-    role = request.form.get("role", "").strip() or "Guest"
-    ticket_type = request.form.get("ticket_type", "").strip() or "Standard"
-    try:
-        companions = int(request.form.get("companions", "0") or 0)
-    except ValueError:
-        companions = 0
-    companions = max(0, min(companions, 10))
 
     photo_filename = None
     photo = request.files.get("photo")
@@ -49,13 +102,13 @@ def add():
     guest = {
         "id": gen_code(),
         "name": name,
-        "role": role,
-        "ticket_type": ticket_type,
-        "companions": companions,
         "photo": photo_filename,
         "checked_in": False,
         "created_at": datetime.now().isoformat(timespec="seconds"),
     }
+    for field in _displayable_fields(config.CONFIG):
+        guest[field["id"]] = _coerce_field_value(field, request.form.get(field["id"]))
+
     guests = load_guests()
     guests.append(guest)
     save_guests(guests)

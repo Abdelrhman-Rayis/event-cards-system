@@ -213,26 +213,29 @@
             <input id="f-name" type="text" name="name" class="input" required dir="auto"
                    autocomplete="name" placeholder="Ahmed Al-Rashid / أحمد الرشيد">
           </div>
+          {% for f in fields %}
           <div class="field">
-            <label for="f-role">Role</label>
-            <input id="f-role" type="text" name="role" class="input" dir="auto"
-                   autocomplete="organization-title" placeholder="Speaker / متحدث">
+            <label for="f-{{ f.id }}">{{ f.label }}</label>
+            {% if f.type == 'select' %}
+              <select id="f-{{ f.id }}" name="{{ f.id }}" class="select" dir="auto">
+                {% for opt in (f.options or []) %}
+                  <option value="{{ opt }}" {% if opt == f.default %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+              </select>
+            {% elif f.type == 'number' %}
+              <input id="f-{{ f.id }}" type="number" name="{{ f.id }}"
+                     value="{{ f.default if f.default not in (None, '') else 0 }}"
+                     {% if f.min is defined %}min="{{ f.min }}"{% endif %}
+                     {% if f.max is defined %}max="{{ f.max }}"{% endif %}
+                     class="input">
+            {% else %}
+              <input id="f-{{ f.id }}" type="text" name="{{ f.id }}" class="input" dir="auto"
+                     value="{{ f.default|default('', true) }}"
+                     {% if f.placeholder %}placeholder="{{ f.placeholder }}"{% endif %}>
+            {% endif %}
+            {% if f.hint %}<div class="hint">{{ f.hint }}</div>{% endif %}
           </div>
-          <div class="field">
-            <label for="f-ticket">Ticket type</label>
-            <select id="f-ticket" name="ticket_type" class="select" dir="auto">
-              <option value="VIP Access">VIP Access</option>
-              <option value="Standard">Standard</option>
-              <option value="Press">Press</option>
-              <option value="Staff">Staff</option>
-              <option value="Sponsor">Sponsor</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="f-comp">Companions</label>
-            <input id="f-comp" type="number" name="companions" value="0" min="0" max="10" class="input">
-            <div class="hint">Additional people allowed in with this guest.</div>
-          </div>
+          {% endfor %}
           <div class="field">
             <label for="f-photo">Photo</label>
             <input id="f-photo" type="file" name="photo" accept="image/*" class="file">
@@ -297,7 +300,14 @@
                 {% endif %}
                 <div class="grow__info">
                   <div class="grow__name" dir="auto">{{ g.name }}{% if g.checked_in %}<span class="badge badge--ok">CHECKED IN</span>{% endif %}</div>
-                  <div class="grow__meta" dir="auto">{{ g.ticket_type }} · {{ g.role }} · +{{ g.companions }} · <span class="grow__code" dir="ltr">{{ g.id }}</span></div>
+                  <div class="grow__meta" dir="auto">
+                    {%- set parts = [] -%}
+                    {%- for f in fields -%}
+                      {%- set fv = format_value(f, g.get(f.id)) -%}
+                      {%- if fv -%}{%- set _ = parts.append(fv) -%}{%- endif -%}
+                    {%- endfor -%}
+                    {{ parts|join(' · ') }}{% if parts %} · {% endif %}<span class="grow__code" dir="ltr">{{ g.id }}</span>
+                  </div>
                 </div>
                 <div class="grow__actions">
                   <a href="{{ url_for('cards.preview', code=g.id) }}" target="_blank" class="btn btn--ghost btn--sm">Preview</a>
