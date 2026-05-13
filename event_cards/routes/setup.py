@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 
+from PIL import Image
 from flask import (
     Blueprint,
     redirect,
@@ -12,6 +13,47 @@ from flask import (
 
 from .. import config
 from ..rendering.themes import list_themes
+
+_LOGO_VARIANTS = ("logo.png", "logo.jpg", "logo.jpeg", "logo.webp")
+_ALLOWED_LOGO_EXTS = (".png", ".jpg", ".jpeg", ".webp")
+
+
+def _current_logo_filename():
+    for name in _LOGO_VARIANTS:
+        if (config.STATIC_DIR / name).is_file():
+            return name
+    return None
+
+
+def _clear_existing_logos():
+    for name in _LOGO_VARIANTS:
+        p = config.STATIC_DIR / name
+        if p.is_file():
+            try:
+                p.unlink()
+            except OSError:
+                pass
+
+
+def _save_uploaded_logo(file_storage):
+    """Persist the upload as static/logo.png — convert via PIL so any input
+    format (jpg/webp/png) normalizes to a single canonical filename.
+    Returns True on success, False if the upload was missing or invalid.
+    """
+    if not file_storage or not file_storage.filename:
+        return False
+    ext = ""
+    if "." in file_storage.filename:
+        ext = "." + file_storage.filename.rsplit(".", 1)[1].lower()
+    if ext not in _ALLOWED_LOGO_EXTS:
+        return False
+    try:
+        im = Image.open(file_storage.stream).convert("RGBA")
+    except (OSError, ValueError):
+        return False
+    _clear_existing_logos()
+    im.save(config.STATIC_DIR / "logo.png", format="PNG")
+    return True
 
 setup_bp = Blueprint("setup", __name__)
 
@@ -141,6 +183,12 @@ def setup():
 
         config.save_config(cfg)
         config.reload_config()
+
+        if request.form.get("remove_logo") == "1":
+            _clear_existing_logos()
+        else:
+            _save_uploaded_logo(request.files.get("logo"))
+
         return redirect(url_for("setup.setup", saved=1))
 
     return render_template(
@@ -148,4 +196,5 @@ def setup():
         cfg=config.CONFIG,
         themes=list_themes(),
         saved=request.args.get("saved") == "1",
+        logo_filename=_current_logo_filename(),
     )
