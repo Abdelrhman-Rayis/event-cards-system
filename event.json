@@ -8,7 +8,10 @@
   "time": "18:00 – 23:00",
   "location": "Manchester, UK",
   "date_code": "20260516",
-  "languages": ["en", "ar"],
+  "languages": [
+    "en",
+    "ar"
+  ],
   "fields": [
     {
       "id": "role",
@@ -23,7 +26,13 @@
       "label": "Ticket Type",
       "type": "select",
       "show_on_card": true,
-      "options": ["VIP Access", "Standard", "Press", "Staff", "Sponsor"],
+      "options": [
+        "VIP Access",
+        "Standard",
+        "Press",
+        "Staff",
+        "Sponsor"
+      ],
       "default": "Standard"
     },
     {

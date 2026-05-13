@@ -10,15 +10,8 @@ from PIL import Image, ImageDraw, ImageOps
 
 from .. import config
 from ..config import (
-    BG_CREAM,
-    BG_HEADER_BORDER,
     CARD_H,
     CARD_W,
-    COLOR_DARK,
-    COLOR_DIVIDER,
-    COLOR_GOLD,
-    COLOR_GRAY,
-    COLOR_TEXT,
     CONFERENCE_CARD_H,
     CONFERENCE_CARD_W,
     PHOTOS_DIR,
@@ -35,6 +28,7 @@ from .fonts import (
     mono_font,
     text_font,
 )
+from .themes import color
 
 try:
     from pillow_heif import register_heif_opener
@@ -150,8 +144,11 @@ def render_header(card):
     title_secondary_ar = (cfg.get("title_secondary_ar") or "").strip()
 
     top_h = 290
+    header_bg = color("header_bg")
+    primary = color("primary")
+    text_color = color("text")
     draw = ImageDraw.Draw(card)
-    draw.rectangle([0, 0, CARD_W, top_h], fill=BG_CREAM)
+    draw.rectangle([0, 0, CARD_W, top_h], fill=header_bg)
 
     en_x = _paste_header_logo(card)
     draw = ImageDraw.Draw(card)
@@ -160,11 +157,11 @@ def render_header(card):
         f = text_font(86, True, title_primary or title_secondary)
         if title_primary:
             draw.text(
-                (en_x, 60), display_bidi(title_primary), font=f, fill=COLOR_DARK
+                (en_x, 60), display_bidi(title_primary), font=f, fill=primary
             )
         if title_secondary:
             draw.text(
-                (en_x, 165), display_bidi(title_secondary), font=f, fill=COLOR_DARK
+                (en_x, 165), display_bidi(title_secondary), font=f, fill=primary
             )
 
     if title_primary_ar or title_secondary_ar:
@@ -175,15 +172,15 @@ def render_header(card):
             txt = ar_shape(line) if has_arabic(line) else line
             w = draw.textlength(txt, font=ar_f)
             draw.text(
-                (CARD_W - 100 - w, 60 + i * 105), txt, font=ar_f, fill=COLOR_DARK
+                (CARD_W - 100 - w, 60 + i * 105), txt, font=ar_f, fill=primary
             )
 
     # Info strip
     info_strip_h = 100
-    draw.rectangle([0, top_h, CARD_W, top_h + info_strip_h], fill=BG_CREAM)
+    draw.rectangle([0, top_h, CARD_W, top_h + info_strip_h], fill=header_bg)
     draw.line(
         [(0, top_h + info_strip_h), (CARD_W, top_h + info_strip_h)],
-        fill=BG_HEADER_BORDER,
+        fill=color("header_border"),
         width=2,
     )
 
@@ -193,9 +190,9 @@ def render_header(card):
     text_w = int(draw.textlength(location_text, font=info_font_obj))
     item_w = 44 + 14 + text_w
     x = (CARD_W - item_w) // 2
-    draw_pin(draw, x, info_y, 44, COLOR_DARK)
+    draw_pin(draw, x, info_y, 44, primary)
     draw.text(
-        (x + 44 + 14, info_y + 2), location_text, font=info_font_obj, fill=COLOR_TEXT
+        (x + 44 + 14, info_y + 2), location_text, font=info_font_obj, fill=text_color
     )
 
     return top_h + info_strip_h
@@ -240,7 +237,13 @@ def _format_field_value(field, value):
 
 def render_card(guest, card_format="event"):
     cfg = config.CONFIG
-    card = Image.new("RGB", (CARD_W, CARD_H), "white")
+    primary = color("primary")
+    text_color = color("text")
+    muted = color("muted")
+    accent = color("accent")
+    divider = color("divider")
+
+    card = Image.new("RGB", (CARD_W, CARD_H), color("card_bg"))
     header_h = render_header(card)
     draw = ImageDraw.Draw(card)
 
@@ -252,7 +255,7 @@ def render_card(guest, card_format="event"):
 
     draw.rectangle(
         [photo_x, photo_y, photo_x + photo_size, photo_y + photo_size],
-        fill=(235, 235, 235),
+        fill=color("photo_placeholder_bg"),
     )
 
     drew_photo = False
@@ -280,7 +283,7 @@ def render_card(guest, card_format="event"):
             ),
             initials,
             font=ifont,
-            fill=(170, 170, 170),
+            fill=color("photo_placeholder_text"),
         )
 
     # VERIFIED badge
@@ -288,7 +291,7 @@ def render_card(guest, card_format="event"):
     bx = photo_x + (photo_size - badge_w) // 2
     by = photo_y + photo_size - badge_h - 16
     draw.rounded_rectangle(
-        [bx, by, bx + badge_w, by + badge_h], radius=6, fill=COLOR_GOLD
+        [bx, by, bx + badge_w, by + badge_h], radius=6, fill=accent
     )
     bfont = font(30, bold=True)
     bw = draw.textlength("VERIFIED", font=bfont)
@@ -299,13 +302,13 @@ def render_card(guest, card_format="event"):
     # Right-side info column
     info_x = photo_x + photo_size + 90
 
-    draw.text((info_x, photo_y + 10), "GUEST NAME", font=font(36), fill=COLOR_GRAY)
+    draw.text((info_x, photo_y + 10), "GUEST NAME", font=font(36), fill=muted)
     nm = guest.get("name", "") or ""
     name_max_w = float(CARD_W - info_x - 90)
     name_f, name_disp, _ = fit_text_for_width(
         draw, nm, name_max_w, 124, True, min_size=64
     )
-    draw.text((info_x, photo_y + 64), name_disp, font=name_f, fill=COLOR_DARK)
+    draw.text((info_x, photo_y + 64), name_disp, font=name_f, fill=primary)
 
     # Info columns driven by event.json fields list
     columns = _card_columns(cfg)
@@ -320,30 +323,30 @@ def render_card(guest, card_format="event"):
             (cx, col_label_y),
             field.get("label", field.get("id", "")).upper(),
             font=font(36),
-            fill=COLOR_GRAY,
+            fill=muted,
         )
         raw = guest.get(field["id"], field.get("default", ""))
         val_str = _format_field_value(field, raw)
         val_f, val_disp, _ = fit_text_for_width(
             draw, val_str, col_text_max_w, 60, True, min_size=32
         )
-        draw.text((cx, col_value_y), val_disp, font=val_f, fill=COLOR_TEXT)
+        draw.text((cx, col_value_y), val_disp, font=val_f, fill=text_color)
 
     # Secured line
     sec_y = col_value_y + 110
-    draw.ellipse([info_x, sec_y + 8, info_x + 16, sec_y + 24], fill=COLOR_DARK)
+    draw.ellipse([info_x, sec_y + 8, info_x + 16, sec_y + 24], fill=primary)
     draw.text(
         (info_x + 28, sec_y),
         "SECURED  ·  HOLOGRAPHIC SEAL  ·  TAMPER-PROOF",
         font=font(30),
-        fill=COLOR_GRAY,
+        fill=muted,
     )
 
     # ---------- DASHED DIVIDER ----------
     div_y = photo_y + photo_size + 60
     dx = 90
     while dx < CARD_W - 90:
-        draw.line([(dx, div_y), (dx + 24, div_y)], fill=COLOR_DIVIDER, width=3)
+        draw.line([(dx, div_y), (dx + 24, div_y)], fill=divider, width=3)
         dx += 40
 
     # ---------- FOOTER ----------
@@ -365,40 +368,40 @@ def render_card(guest, card_format="event"):
     card.paste(qr_img, (qr_x, qr_y))
     draw.rectangle(
         [qr_x - 3, qr_y - 3, qr_x + qr_size + 2, qr_y + qr_size + 2],
-        outline=COLOR_DIVIDER,
+        outline=divider,
         width=2,
     )
 
     dv_x = qr_x + qr_size + 70
     dv_top = qr_y + 6
 
-    draw.text((dv_x, dv_top), "TICKET ID", font=font(28), fill=COLOR_GRAY)
+    draw.text((dv_x, dv_top), "TICKET ID", font=font(28), fill=muted)
     serial_font = mono_font(46, bold=True)
-    draw.text((dv_x, dv_top + 40), guest["id"], font=serial_font, fill=COLOR_DARK)
+    draw.text((dv_x, dv_top + 40), guest["id"], font=serial_font, fill=primary)
 
     dv_header_y = dv_top + 140
-    draw_lock(draw, dv_x, dv_header_y + 6, 52, COLOR_DARK)
+    draw_lock(draw, dv_x, dv_header_y + 6, 52, primary)
     draw.text(
         (dv_x + 70, dv_header_y),
         "DOOR VERIFICATION",
         font=font(44, bold=True),
-        fill=COLOR_DARK,
+        fill=primary,
     )
 
     underline_y = dv_header_y + 72
-    draw.rectangle([dv_x, underline_y, dv_x + 80, underline_y + 4], fill=COLOR_GOLD)
+    draw.rectangle([dv_x, underline_y, dv_x + 80, underline_y + 4], fill=accent)
 
     draw.text(
         (dv_x, dv_header_y + 96),
         "Scan this code at entry.",
         font=font(34),
-        fill=COLOR_TEXT,
+        fill=text_color,
     )
     draw.text(
         (dv_x, dv_header_y + 146),
         "Valid for one entry only.",
         font=font(34),
-        fill=COLOR_TEXT,
+        fill=text_color,
     )
 
     # Issuer line from event config
@@ -413,7 +416,7 @@ def render_card(guest, card_format="event"):
             (CARD_W - iw - 90, qr_y + qr_size - 24),
             display_bidi(issuer_text),
             font=issuer_font,
-            fill=COLOR_GRAY,
+            fill=muted,
         )
 
     return finalize_card_for_format(card, card_format)

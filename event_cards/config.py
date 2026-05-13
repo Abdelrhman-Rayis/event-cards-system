@@ -127,22 +127,11 @@ def reload_config():
 
 
 # ----------------- Card visual constants -----------------
+# Colors now come from rendering.themes (driven by template.id in event.json).
 
 CARD_W, CARD_H = 1950, 1340
 CONFERENCE_CARD_W = int(round(3.375 * 300))
 CONFERENCE_CARD_H = int(round(2.125 * 300))
-
-BG_CREAM = (250, 244, 230)
-BG_HEADER_BORDER = (224, 216, 184)
-COLOR_DARK = (28, 76, 92)
-COLOR_TEXT = (40, 50, 60)
-COLOR_GRAY = (130, 130, 130)
-COLOR_GOLD = (180, 142, 70)
-COLOR_DIVIDER = (210, 210, 210)
-COLOR_FIGURE_RED = (200, 60, 50)
-COLOR_FIGURE_BLACK = (40, 40, 50)
-COLOR_FIGURE_GREEN = (60, 140, 70)
-COLOR_FIGURE_GOLD = (190, 145, 60)
 
 
 def normalize_card_format(value):
