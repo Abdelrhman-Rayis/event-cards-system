@@ -64,7 +64,7 @@ EVENT = {
 
 # ----------------- Card visual constants -----------------
 
-CARD_W, CARD_H = 1950, 1200
+CARD_W, CARD_H = 1950, 1260
 # ISO CR80 / common conference badge insert, landscape, at 300 dpi (3.375" × 2.125")
 CONFERENCE_CARD_W = int(round(3.375 * 300))
 CONFERENCE_CARD_H = int(round(2.125 * 300))
