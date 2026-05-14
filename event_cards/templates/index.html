@@ -209,8 +209,8 @@
 
   <main class="container">
     <div class="grid">
-
-      <section class="card">
+      <div>
+        <section class="card">
         <div class="card__hdr"><h2>Add guest</h2></div>
         <form action="{{ url_for('guests.add') }}" method="post" enctype="multipart/form-data">
           <div class="field">
@@ -266,6 +266,7 @@
       </section>
 
 
+            </div>
       <section class="card">
         <div class="card__hdr"><h2>Guests ({{ guests|length }})</h2></div>
 
