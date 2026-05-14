@@ -17,6 +17,12 @@ from ..rendering.themes import list_themes
 _LOGO_VARIANTS_FOR_BASE = {
     "logo": ("logo.png", "logo.jpg", "logo.jpeg", "logo.webp"),
     "logo2": ("logo2.png", "logo2.jpg", "logo2.jpeg", "logo2.webp"),
+    "default_avatar": (
+        "default_avatar.png",
+        "default_avatar.jpg",
+        "default_avatar.jpeg",
+        "default_avatar.webp",
+    ),
 }
 _ALLOWED_LOGO_EXTS = (".png", ".jpg", ".jpeg", ".webp")
 
@@ -197,6 +203,11 @@ def setup():
         else:
             _save_uploaded_logo(request.files.get("logo2"), "logo2")
 
+        if request.form.get("remove_default_avatar") == "1":
+            _clear_existing_logos("default_avatar")
+        else:
+            _save_uploaded_logo(request.files.get("default_avatar"), "default_avatar")
+
         return redirect(url_for("setup.setup", saved=1))
 
     return render_template(
@@ -206,4 +217,5 @@ def setup():
         saved=request.args.get("saved") == "1",
         logo_filename=_current_logo_filename("logo"),
         logo2_filename=_current_logo_filename("logo2"),
+        default_avatar_filename=_current_logo_filename("default_avatar"),
     )

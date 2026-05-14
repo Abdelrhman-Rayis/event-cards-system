@@ -24,7 +24,6 @@ from .fonts import (
     fit_text_for_width,
     font,
     has_arabic,
-    initials_from_name,
     mono_font,
     text_font,
 )
@@ -83,6 +82,8 @@ _logo_cache_mtime = None
 _logo_cache_image = None
 _logo2_cache_mtime = None
 _logo2_cache_image = None
+_avatar_cache_key = None
+_avatar_cache_image = None
 
 
 def _resolve_logo_path(base="logo"):
@@ -144,6 +145,52 @@ def _footer_logo_image():
         return resized
     except (OSError, ValueError):
         return None
+
+
+def _default_avatar_image(size):
+    """Uploaded default-guest photo, cropped square to the photo box. None if absent."""
+    global _avatar_cache_key, _avatar_cache_image
+    path = _resolve_logo_path("default_avatar")
+    if path is None:
+        return None
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return None
+    key = (mtime, size)
+    if _avatar_cache_image is not None and _avatar_cache_key == key:
+        return _avatar_cache_image
+    try:
+        im = Image.open(path).convert("RGB")
+        im = ImageOps.exif_transpose(im)
+        im = ImageOps.fit(im, (size, size), Image.LANCZOS)
+        _avatar_cache_image = im
+        _avatar_cache_key = key
+        return im
+    except (OSError, ValueError):
+        return None
+
+
+def _draw_silhouette(draw, x, y, size, fill):
+    """Gender-neutral guest silhouette (head + shoulders) inscribed in a size×size box."""
+    cx = x + size // 2
+    head_r = int(size * 0.18)
+    head_cy = y + int(size * 0.30)
+    draw.ellipse(
+        [cx - head_r, head_cy - head_r, cx + head_r, head_cy + head_r],
+        fill=fill,
+    )
+    body_w = int(size * 0.62)
+    body_h = int(size * 0.55)
+    body_top = head_cy + int(head_r * 0.85)
+    body_left = cx - body_w // 2
+    body_right = cx + body_w // 2
+    body_bottom = body_top + body_h
+    draw.rounded_rectangle(
+        [body_left, body_top, body_right, body_bottom],
+        radius=int(size * 0.22),
+        fill=fill,
+    )
 
 
 def _paste_header_logo(card):
@@ -300,19 +347,17 @@ def render_card(guest, card_format="event"):
                 pass
 
     if not drew_photo:
-        initials = initials_from_name(guest.get("name", ""))
-        ifont = text_font(130, True, initials)
-        bbox = draw.textbbox((0, 0), initials, font=ifont)
-        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        draw.text(
-            (
-                photo_x + (photo_size - tw) // 2 - bbox[0],
-                photo_y + (photo_size - th) // 2 - bbox[1] - 10,
-            ),
-            initials,
-            font=ifont,
-            fill=color("photo_placeholder_text"),
-        )
+        avatar = _default_avatar_image(photo_size)
+        if avatar is not None:
+            card.paste(avatar, (photo_x, photo_y))
+        else:
+            _draw_silhouette(
+                draw,
+                photo_x,
+                photo_y,
+                photo_size,
+                color("photo_placeholder_text"),
+            )
 
     # VERIFIED badge
     badge_w, badge_h = 200, 56

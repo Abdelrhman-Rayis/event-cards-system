@@ -284,6 +284,30 @@
                  class="input" style="padding: 8px;">
           <div class="hint">Shown in the lower-right of every card (e.g. a sponsor or co-organiser logo). Leave blank to omit. Transparent PNG works best.</div>
         </div>
+
+        <div class="field" style="margin-top: 14px;">
+          <label>Default guest photo (optional)</label>
+          {% if default_avatar_filename %}
+            <div style="display: flex; align-items: center; gap: 14px; padding: 10px;
+                        background: var(--bg); border: 1px solid var(--border);
+                        border-radius: var(--radius-sm); margin-bottom: 10px;">
+              <img src="{{ url_for('static', filename=default_avatar_filename) }}?v={{ cfg.date_code }}"
+                   alt="Current default guest photo"
+                   style="height: 60px; width: 60px; object-fit: cover;
+                          background: white; border-radius: 50%;">
+              <div style="font-size: 13px; color: var(--muted);">
+                Current default photo (<code style="font-family: ui-monospace, monospace;">static/{{ default_avatar_filename }}</code>)
+              </div>
+            </div>
+            <label class="check" style="margin-bottom: 8px;">
+              <input type="checkbox" name="remove_default_avatar" value="1">
+              Remove default photo (fall back to a generic silhouette)
+            </label>
+          {% endif %}
+          <input type="file" name="default_avatar" accept="image/png,image/jpeg,image/webp"
+                 class="input" style="padding: 8px;">
+          <div class="hint">Used when a guest has no profile photo. A square image works best — it will be cropped to fit the card's photo box. Leave blank to use the built-in gender-neutral silhouette.</div>
+        </div>
       </section>
 
       <!-- ============== FIELDS ============== -->
