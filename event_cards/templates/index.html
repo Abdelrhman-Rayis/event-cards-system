@@ -246,6 +246,20 @@
           </div>
         </form>
       </section>
+      <section class="card" style="margin-top: 16px;">
+        <div class="card__hdr"><h2>Import guests</h2></div>
+        <form action="{{ url_for('guests.import_excel') }}" method="post" enctype="multipart/form-data">
+          <div class="field">
+            <label for="f-file">Excel file (.xlsx) with names</label>
+            <input id="f-file" type="file" name="file" accept=".xlsx,.xls,.csv" class="file" required>
+            <div class="hint">Will assign role 'Guest' and ticket 'VIP Access' by default.</div>
+          </div>
+          <div class="field">
+            <button type="submit" class="btn btn--accent btn--block">Import from Excel</button>
+          </div>
+        </form>
+      </section>
+
 
       <section class="card">
         <div class="card__hdr"><h2>Guests ({{ guests|length }})</h2></div>

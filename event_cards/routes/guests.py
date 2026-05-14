@@ -125,3 +125,53 @@ def delete(code):
 @guests_bp.route("/photo/<filename>")
 def photo(filename):
     return send_from_directory(PHOTOS_DIR, filename)
+
+import pandas as pd
+
+@guests_bp.route("/import", methods=["POST"])
+def import_excel():
+    file = request.files.get("file")
+    if not file or not file.filename:
+        return redirect(url_for("guests.index"))
+
+    try:
+        df = pd.read_excel(file)
+        # assuming names are in the first column or column named 'Name'/'name'
+        name_col = None
+        for col in df.columns:
+            if str(col).strip().lower() in ('name', 'full name', 'fullname', 'names'):
+                name_col = col
+                break
+        if name_col is None:
+            name_col = df.columns[0] # fallback to first column
+        
+        guests = load_guests()
+        for idx, row in df.iterrows():
+            name = str(row[name_col]).strip()
+            if not name or name.lower() == 'nan':
+                continue
+            
+            guest = {
+                "id": gen_code(),
+                "name": name,
+                "photo": None,
+                "checked_in": False,
+                "created_at": datetime.now().isoformat(timespec="seconds"),
+            }
+            
+            # Default required logic:
+            guest["role"] = "Guest"
+            guest["ticket_type"] = "VIP Access"
+            
+            # Ensure other fields have defaults
+            for field in _displayable_fields(config.CONFIG):
+                if field["id"] not in ("role", "ticket_type"):
+                    guest[field["id"]] = _coerce_field_value(field, None)
+                    
+            guests.append(guest)
+            
+        save_guests(guests)
+    except Exception as e:
+        print("Error importing:", e)
+    
+    return redirect(url_for("guests.index"))
