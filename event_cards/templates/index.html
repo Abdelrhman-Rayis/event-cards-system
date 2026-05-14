@@ -324,6 +324,7 @@
                   </div>
                 </div>
                 <div class="grow__actions">
+                  <a href="{{ url_for('guests.edit', code=g.id) }}" class="btn btn--ghost btn--sm">Edit</a>
                   <a href="{{ url_for('cards.preview', code=g.id) }}" target="_blank" class="btn btn--ghost btn--sm">Preview</a>
                   <a href="{{ url_for('cards.preview', code=g.id, format='conference') }}" target="_blank" class="btn btn--ghost btn--sm" title="CR80 conference size">CR80</a>
                   <form action="{{ url_for('guests.delete', code=g.id) }}" method="post">

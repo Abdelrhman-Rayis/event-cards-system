@@ -175,3 +175,42 @@ def import_excel():
         print("Error importing:", e)
     
     return redirect(url_for("guests.index"))
+
+@guests_bp.route("/edit/<code>", methods=["GET", "POST"])
+def edit(code):
+    guests = load_guests()
+    guest_idx = next((i for i, g in enumerate(guests) if g["id"] == code), None)
+    if guest_idx is None:
+        return redirect(url_for("guests.index"))
+        
+    guest = guests[guest_idx]
+    
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        if name:
+            guest["name"] = name
+            
+        photo = request.files.get("photo")
+        if photo and photo.filename:
+            ext = Path(photo.filename).suffix.lower()
+            if ext in (".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"):
+                photo_filename = f"{uuid.uuid4().hex}{ext}"
+                photo.save(str(PHOTOS_DIR / photo_filename))
+                guest["photo"] = photo_filename
+                
+        for field in _displayable_fields(config.CONFIG):
+            guest[field["id"]] = _coerce_field_value(field, request.form.get(field["id"]))
+            
+        guests[guest_idx] = guest
+        save_guests(guests)
+        return redirect(url_for("guests.index"))
+        
+    cfg = config.CONFIG
+    fields = _displayable_fields(cfg)
+    return render_template(
+        "edit.html",
+        guest=guest,
+        event=EVENT,
+        cfg=cfg,
+        fields=fields,
+    )

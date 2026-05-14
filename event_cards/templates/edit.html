@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F4C5C">
+  <title>Edit Guest — {{ event.title_en_l1 }}</title>
+  <style>
+    :root {
+      --primary: #0F4C5C;
+      --primary-hover: #155F73;
+      --accent: #C9A14A;
+      --bg: #F7F8FA;
+      --surface: #FFFFFF;
+      --text: #1F2937;
+      --muted: #6B7280;
+      --border: #E5E7EB;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --tap: 44px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+      font-size: 15px; line-height: 1.5; color: var(--text); background: var(--bg);
+    }
+    .hdr { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; }
+    .hdr__inner { max-width: 600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+    .hdr h1 { margin: 0; font-size: 17px; font-weight: 600; color: var(--primary); }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .card__hdr h2 { margin: 0 0 16px 0; font-size: 16px; }
+    .field { margin-top: 14px; }
+    .field:first-child { margin-top: 0; }
+    label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+    .input, .select, .file { width: 100%; padding: 11px 12px; font: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+    .input:focus, .select:focus { outline: none; border-color: var(--primary); }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; min-height: var(--tap); font: inherit; font-weight: 600; font-size: 14px; border: 1px solid transparent; border-radius: var(--radius-sm); cursor: pointer; text-decoration: none; }
+    .btn--primary { background: var(--primary); color: white; width: 100%; }
+    .btn--ghost { background: var(--surface); color: var(--primary); border-color: var(--border); }
+  </style>
+</head>
+<body>
+  <header class="hdr">
+    <div class="hdr__inner">
+      <h1>Edit Guest</h1>
+      <a href="{{ url_for('guests.index') }}" class="btn btn--ghost" style="min-height: 34px; font-size: 13px;">Cancel</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="card__hdr"><h2>{{ guest.name }}</h2></div>
+      <form method="post" enctype="multipart/form-data">
+        <div class="field">
+          <label for="f-name">Full name</label>
+          <input id="f-name" type="text" name="name" class="input" required dir="auto" value="{{ guest.name }}">
+        </div>
+        
+        {% for f in fields %}
+        <div class="field">
+          <label for="f-{{ f.id }}">{{ f.label }}</label>
+          {% if f.type == 'select' %}
+            <select id="f-{{ f.id }}" name="{{ f.id }}" class="select" dir="auto">
+              {% for opt in (f.options or []) %}
+                <option value="{{ opt }}" {% if opt == guest.get(f.id, f.default) %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+          {% elif f.type == 'number' %}
+            <input id="f-{{ f.id }}" type="number" name="{{ f.id }}" class="input"
+                   value="{{ guest.get(f.id, f.default if f.default not in (None, '') else 0) }}"
+                   {% if f.min is defined %}min="{{ f.min }}"{% endif %}
+                   {% if f.max is defined %}max="{{ f.max }}"{% endif %}>
+          {% else %}
+            <input id="f-{{ f.id }}" type="text" name="{{ f.id }}" class="input" dir="auto"
+                   value="{{ guest.get(f.id, f.default|default('', true)) }}">
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="field">
+          <label for="f-photo">Update Photo (Optional)</label>
+          {% if guest.photo %}
+            <div style="margin-bottom: 8px;">
+              <img src="{{ url_for('guests.photo', filename=guest.photo) }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+              <span class="hint">Current photo</span>
+            </div>
+          {% endif %}
+          <input id="f-photo" type="file" name="photo" accept="image/*" class="file">
+          <div class="hint">Leave empty to keep current photo.</div>
+        </div>
+
+        <div class="field" style="margin-top: 24px;">
+          <button type="submit" class="btn btn--primary">Save Changes</button>
+        </div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
