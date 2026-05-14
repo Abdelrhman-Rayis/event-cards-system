@@ -81,13 +81,15 @@ def draw_lock(d, x, y, s, color):
 
 _logo_cache_mtime = None
 _logo_cache_image = None
+_logo2_cache_mtime = None
+_logo2_cache_image = None
 
 
-def _resolve_logo_path():
+def _resolve_logo_path(base="logo"):
     from ..config import STATIC_DIR
 
-    for name in ("logo.png", "logo.jpg", "logo.webp"):
-        p = STATIC_DIR / name
+    for ext in (".png", ".jpg", ".webp"):
+        p = STATIC_DIR / f"{base}{ext}"
         if p.is_file():
             return p
     return None
@@ -95,7 +97,7 @@ def _resolve_logo_path():
 
 def _header_logo_image():
     global _logo_cache_mtime, _logo_cache_image
-    path = _resolve_logo_path()
+    path = _resolve_logo_path("logo")
     if path is None:
         return None
     try:
@@ -113,6 +115,32 @@ def _header_logo_image():
         resized = im.resize((nw, nh), Image.LANCZOS)
         _logo_cache_image = resized
         _logo_cache_mtime = mtime
+        return resized
+    except (OSError, ValueError):
+        return None
+
+
+def _footer_logo_image():
+    """Optional secondary logo, sized for the bottom-right footer area."""
+    global _logo2_cache_mtime, _logo2_cache_image
+    path = _resolve_logo_path("logo2")
+    if path is None:
+        return None
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return None
+    if _logo2_cache_image is not None and _logo2_cache_mtime == mtime:
+        return _logo2_cache_image
+    try:
+        im = Image.open(path).convert("RGBA")
+        max_w, max_h = 280, 220
+        sc = min(1.0, max_w / max(im.width, 1), max_h / max(im.height, 1))
+        nw = max(1, int(im.width * sc))
+        nh = max(1, int(im.height * sc))
+        resized = im.resize((nw, nh), Image.LANCZOS)
+        _logo2_cache_image = resized
+        _logo2_cache_mtime = mtime
         return resized
     except (OSError, ValueError):
         return None
@@ -403,6 +431,20 @@ def render_card(guest, card_format="event"):
         font=font(34),
         fill=text_color,
     )
+
+    # Optional footer logo in the bottom-right
+    fl = _footer_logo_image()
+    if fl is not None:
+        right_margin = 90
+        bottom_margin = 60  # leave room for the issuer line below
+        fx = CARD_W - right_margin - fl.width
+        fy = qr_y + qr_size - bottom_margin - fl.height
+        if fl.mode == "RGBA":
+            rgb = Image.merge("RGB", fl.split()[:3])
+            alpha = fl.split()[3]
+            card.paste(rgb, (fx, fy), alpha)
+        else:
+            card.paste(fl, (fx, fy))
 
     # Issuer line from event config
     issuer_bits = [

@@ -14,19 +14,22 @@ from flask import (
 from .. import config
 from ..rendering.themes import list_themes
 
-_LOGO_VARIANTS = ("logo.png", "logo.jpg", "logo.jpeg", "logo.webp")
+_LOGO_VARIANTS_FOR_BASE = {
+    "logo": ("logo.png", "logo.jpg", "logo.jpeg", "logo.webp"),
+    "logo2": ("logo2.png", "logo2.jpg", "logo2.jpeg", "logo2.webp"),
+}
 _ALLOWED_LOGO_EXTS = (".png", ".jpg", ".jpeg", ".webp")
 
 
-def _current_logo_filename():
-    for name in _LOGO_VARIANTS:
+def _current_logo_filename(base="logo"):
+    for name in _LOGO_VARIANTS_FOR_BASE[base]:
         if (config.STATIC_DIR / name).is_file():
             return name
     return None
 
 
-def _clear_existing_logos():
-    for name in _LOGO_VARIANTS:
+def _clear_existing_logos(base="logo"):
+    for name in _LOGO_VARIANTS_FOR_BASE[base]:
         p = config.STATIC_DIR / name
         if p.is_file():
             try:
@@ -35,8 +38,8 @@ def _clear_existing_logos():
                 pass
 
 
-def _save_uploaded_logo(file_storage):
-    """Persist the upload as static/logo.png — convert via PIL so any input
+def _save_uploaded_logo(file_storage, base="logo"):
+    """Persist the upload as static/{base}.png — convert via PIL so any input
     format (jpg/webp/png) normalizes to a single canonical filename.
     Returns True on success, False if the upload was missing or invalid.
     """
@@ -51,8 +54,8 @@ def _save_uploaded_logo(file_storage):
         im = Image.open(file_storage.stream).convert("RGBA")
     except (OSError, ValueError):
         return False
-    _clear_existing_logos()
-    im.save(config.STATIC_DIR / "logo.png", format="PNG")
+    _clear_existing_logos(base)
+    im.save(config.STATIC_DIR / f"{base}.png", format="PNG")
     return True
 
 setup_bp = Blueprint("setup", __name__)
@@ -185,9 +188,14 @@ def setup():
         config.reload_config()
 
         if request.form.get("remove_logo") == "1":
-            _clear_existing_logos()
+            _clear_existing_logos("logo")
         else:
-            _save_uploaded_logo(request.files.get("logo"))
+            _save_uploaded_logo(request.files.get("logo"), "logo")
+
+        if request.form.get("remove_logo2") == "1":
+            _clear_existing_logos("logo2")
+        else:
+            _save_uploaded_logo(request.files.get("logo2"), "logo2")
 
         return redirect(url_for("setup.setup", saved=1))
 
@@ -196,5 +204,6 @@ def setup():
         cfg=config.CONFIG,
         themes=list_themes(),
         saved=request.args.get("saved") == "1",
-        logo_filename=_current_logo_filename(),
+        logo_filename=_current_logo_filename("logo"),
+        logo2_filename=_current_logo_filename("logo2"),
     )
