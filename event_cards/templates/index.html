@@ -271,11 +271,18 @@
         <div class="card__hdr"><h2>Guests ({{ guests|length }})</h2></div>
 
         {% if guests %}
-          <a href="{{ url_for('cards.generate_print_sheets', paper='a4', format='event') }}"
-             class="btn btn--accent btn--block"
-             title="A4 PDF: multiple cards per page with dashed cut lines">
-            Generate cards for printing (A4)
-          </a>
+          <div style="display: flex; gap: 8px;">
+            <a href="{{ url_for('cards.generate_print_sheets', paper='a4', format='event') }}"
+               class="btn btn--accent btn--block" style="flex: 2;"
+               title="Standard size">
+              Generate cards for printing (A4)
+            </a>
+            <a href="{{ url_for('cards.generate_print_sheets', paper='a4', format='event', size='large') }}"
+               class="btn btn--ghost" style="flex: 1;"
+               title="Larger print size (fewer per page)">
+              Large Size
+            </a>
+          </div>
           <p class="hero-cta__sub">Multiple cards per page · cut along dashed lines · print at 100% scale</p>
 
           <details class="more">
@@ -285,6 +292,7 @@
                 <div class="export-group__label">Sheets — A4</div>
                 <div class="export-group__row">
                   <a href="{{ url_for('cards.generate_print_sheets', paper='a4', format='event') }}" class="btn btn--ghost btn--sm">Event</a>
+                  <a href="{{ url_for('cards.generate_print_sheets', paper='a4', format='event', size='large') }}" class="btn btn--ghost btn--sm" title="Large Print Size">Event (Large)</a>
                   <a href="{{ url_for('cards.generate_print_sheets', paper='a4', format='conference') }}" class="btn btn--ghost btn--sm">CR80</a>
                 </div>
               </div>
@@ -292,6 +300,7 @@
                 <div class="export-group__label">Sheets — Letter</div>
                 <div class="export-group__row">
                   <a href="{{ url_for('cards.generate_print_sheets', paper='letter', format='event') }}" class="btn btn--ghost btn--sm">Event</a>
+                  <a href="{{ url_for('cards.generate_print_sheets', paper='letter', format='event', size='large') }}" class="btn btn--ghost btn--sm">Event (Large)</a>
                   <a href="{{ url_for('cards.generate_print_sheets', paper='letter', format='conference') }}" class="btn btn--ghost btn--sm">CR80</a>
                 </div>
               </div>

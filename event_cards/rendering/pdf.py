@@ -26,8 +26,9 @@ def paper_dimensions(paper):
     return mm_to_print_px(210), mm_to_print_px(297)
 
 
-def best_print_layout(page_w, page_h, cw, ch):
-    """Maximize cards per page; each card scaled uniformly with gaps for cutting."""
+
+
+def best_print_layout(page_w, page_h, cw, ch, size="standard"):
     uw = page_w - 2 * PRINT_MARGIN
     uh = page_h - 2 * PRINT_MARGIN
     if uw <= 10 or uh <= 10:
@@ -45,7 +46,15 @@ def best_print_layout(page_w, page_h, cw, ch):
             if scale < PRINT_MIN_SCALE:
                 continue
             per = cols * rows
-            key = (per, scale)
+            
+            # If large, we prioritize scale (the physical size of the card) over how many fit.
+            # We still want the most cards possible AT that scale tier.
+            if size == "large":
+                # round scale to 1 decimal place so slightly larger margins don't defeat having more cards
+                key = (round(scale, 1), per)
+            else:
+                key = (per, scale)
+                
             if best_key is None or key > best_key:
                 best_key = key
                 best = {"cols": cols, "rows": rows, "scale": scale, "per_page": per}
@@ -55,20 +64,10 @@ def best_print_layout(page_w, page_h, cw, ch):
     return best
 
 
-def pick_global_print_layout(paper, cw, ch):
-    """Best grid across portrait and landscape for the paper size."""
-    pw, ph = paper_dimensions(paper)
-    chosen = None
-    chosen_key = None
-    for w, h in ((pw, ph), (ph, pw)):
-        lay = best_print_layout(w, h, cw, ch)
-        if lay is None:
-            continue
-        key = (lay["per_page"], lay["scale"])
-        if chosen_key is None or key > chosen_key:
-            chosen_key = key
-            chosen = {**lay, "page_w": w, "page_h": h, "card_w": cw, "card_h": ch}
-    return chosen
+
+
+
+
 
 
 def dashed_rectangle(draw, bbox, dash=14, gap=8, fill=(145, 150, 155), width=2):
@@ -131,13 +130,16 @@ def compose_print_sheet_page(card_images, layout):
     return sheet
 
 
-def build_print_sheets_pdf(guests, paper="a4", card_format="event"):
+
+
+def build_print_sheets_pdf(guests, paper="a4", card_format="event", size="standard"):
     cf = normalize_card_format(card_format)
     cw, ch = card_layout_pixels(cf)
-    layout = pick_global_print_layout(paper, cw, ch)
+    
+    layout = pick_global_print_layout(paper, cw, ch, size=size)
     if layout is None:
         pw, ph = paper_dimensions(paper)
-        bl = best_print_layout(pw, ph, cw, ch)
+        bl = best_print_layout(pw, ph, cw, ch, size=size)
         layout = {**bl, "page_w": pw, "page_h": ph, "card_w": cw, "card_h": ch}
     per = layout["per_page"]
     card_images = [render_card(g, cf).convert("RGB") for g in guests]

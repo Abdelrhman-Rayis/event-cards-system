@@ -53,6 +53,7 @@ def generate():
     )
 
 
+
 @cards_bp.route("/generate/print-sheets")
 def generate_print_sheets():
     guests = load_guests()
@@ -62,14 +63,17 @@ def generate_print_sheets():
     if paper not in ("a4", "letter"):
         paper = "a4"
     fmt = normalize_card_format(request.args.get("format"))
-    buf = build_print_sheets_pdf(guests, paper=paper, card_format=fmt)
+    size = request.args.get("size", "standard").strip().lower()
+    
+    buf = build_print_sheets_pdf(guests, paper=paper, card_format=fmt, size=size)
     suffix = "a4" if paper == "a4" else "letter"
     cr = "-cr80" if fmt == "conference" else ""
+    sz = "-large" if size == "large" else ""
     return send_file(
         buf,
         mimetype="application/pdf",
         as_attachment=True,
-        download_name=(
-            f"guest-cards-print-sheets-{EVENT['date_code']}-{suffix}{cr}.pdf"
-        ),
+        download_name=f"print-sheets-{EVENT['date_code']}-{suffix}{cr}{sz}.pdf",
+    )
+,
     )
