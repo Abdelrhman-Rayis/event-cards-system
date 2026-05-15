@@ -136,11 +136,9 @@ def build_print_sheets_pdf(guests, paper="a4", card_format="event", size="standa
     cf = normalize_card_format(card_format)
     cw, ch = card_layout_pixels(cf)
     
-    layout = pick_global_print_layout(paper, cw, ch, size=size)
-    if layout is None:
-        pw, ph = paper_dimensions(paper)
-        bl = best_print_layout(pw, ph, cw, ch, size=size)
-        layout = {**bl, "page_w": pw, "page_h": ph, "card_w": cw, "card_h": ch}
+    pw, ph = paper_dimensions(paper)
+    bl = best_print_layout(pw, ph, cw, ch, size=size)
+    layout = {**bl, "page_w": pw, "page_h": ph, "card_w": cw, "card_h": ch}
     per = layout["per_page"]
     card_images = [render_card(g, cf).convert("RGB") for g in guests]
     pages = []
