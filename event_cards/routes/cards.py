@@ -75,5 +75,3 @@ def generate_print_sheets():
         as_attachment=True,
         download_name=f"print-sheets-{EVENT['date_code']}-{suffix}{cr}{sz}.pdf",
     )
-,
-    )
