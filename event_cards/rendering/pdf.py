@@ -38,11 +38,18 @@ def best_print_layout(page_w, page_h, cw, ch, size="standard"):
     gap = PRINT_GAP
 
     if size == "xlarge":
-        cols, rows = 2, 2
-        slot_w = (uw - (cols - 1) * gap) / cols
-        slot_h = (uh - (rows - 1) * gap) / rows
+        cols, rows = 2, 3
+        xl_margin = 24
+        xl_gap = 12
+        uw_x = page_w - 2 * xl_margin
+        uh_x = page_h - 2 * xl_margin
+        slot_w = (uw_x - (cols - 1) * xl_gap) / cols
+        slot_h = (uh_x - (rows - 1) * xl_gap) / rows
         scale = min(slot_w / cw, slot_h / ch)
-        return {"cols": cols, "rows": rows, "scale": scale, "per_page": cols * rows}
+        return {
+            "cols": cols, "rows": rows, "scale": scale, "per_page": cols * rows,
+            "margin": xl_margin, "gap": xl_gap,
+        }
 
     best = None
     best_key = None
@@ -114,11 +121,12 @@ def compose_print_sheet_page(card_images, layout):
     scale = layout["scale"]
     cw = layout["card_w"]
     ch = layout["card_h"]
+    margin = layout.get("margin", PRINT_MARGIN)
+    gap = layout.get("gap", PRINT_GAP)
     sheet = Image.new("RGB", (page_w, page_h), (255, 255, 255))
     draw = ImageDraw.Draw(sheet)
-    uw = page_w - 2 * PRINT_MARGIN
-    uh = page_h - 2 * PRINT_MARGIN
-    gap = PRINT_GAP
+    uw = page_w - 2 * margin
+    uh = page_h - 2 * margin
     slot_w = (uw - (cols - 1) * gap) / cols
     slot_h = (uh - (rows - 1) * gap) / rows
     dw = max(1, int(round(cw * scale)))
