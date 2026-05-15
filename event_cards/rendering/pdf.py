@@ -23,6 +23,8 @@ def paper_dimensions(paper):
     p = (paper or "a4").strip().lower()
     if p == "letter":
         return int(round(8.5 * PRINT_DPI)), int(round(11.0 * PRINT_DPI))
+    if p == "a3":
+        return mm_to_print_px(297), mm_to_print_px(420)
     return mm_to_print_px(210), mm_to_print_px(297)
 
 
@@ -34,6 +36,14 @@ def best_print_layout(page_w, page_h, cw, ch, size="standard"):
     if uw <= 10 or uh <= 10:
         return None
     gap = PRINT_GAP
+
+    if size == "xlarge":
+        cols, rows = 2, 2
+        slot_w = (uw - (cols - 1) * gap) / cols
+        slot_h = (uh - (rows - 1) * gap) / rows
+        scale = min(slot_w / cw, slot_h / ch)
+        return {"cols": cols, "rows": rows, "scale": scale, "per_page": cols * rows}
+
     best = None
     best_key = None
     for cols in range(1, PRINT_MAX_GRID + 1):

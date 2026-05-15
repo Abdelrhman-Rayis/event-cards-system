@@ -60,15 +60,15 @@ def generate_print_sheets():
     if not guests:
         return redirect(url_for("guests.index"))
     paper = request.args.get("paper", "a4").strip().lower()
-    if paper not in ("a4", "letter"):
+    if paper not in ("a4", "letter", "a3"):
         paper = "a4"
     fmt = normalize_card_format(request.args.get("format"))
     size = request.args.get("size", "standard").strip().lower()
-    
+
     buf = build_print_sheets_pdf(guests, paper=paper, card_format=fmt, size=size)
-    suffix = "a4" if paper == "a4" else "letter"
+    suffix = paper
     cr = "-cr80" if fmt == "conference" else ""
-    sz = "-large" if size == "large" else ""
+    sz = "-large" if size == "large" else ("-xlarge" if size == "xlarge" else "")
     return send_file(
         buf,
         mimetype="application/pdf",
