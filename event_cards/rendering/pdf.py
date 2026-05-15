@@ -14,18 +14,18 @@ PRINT_MIN_SCALE = 0.40
 PRINT_MAX_GRID = 6
 
 
-def mm_to_print_px(mm):
-    return int(round(mm * PRINT_DPI / 25.4))
+def mm_to_print_px(mm, dpi=PRINT_DPI):
+    return int(round(mm * dpi / 25.4))
 
 
-def paper_dimensions(paper):
-    """Portrait (width, height) in pixels at PRINT_DPI."""
+def paper_dimensions(paper, dpi=PRINT_DPI):
+    """Portrait (width, height) in pixels at the given DPI."""
     p = (paper or "a4").strip().lower()
     if p == "letter":
-        return int(round(8.5 * PRINT_DPI)), int(round(11.0 * PRINT_DPI))
+        return int(round(8.5 * dpi)), int(round(11.0 * dpi))
     if p == "a3":
-        return mm_to_print_px(297), mm_to_print_px(420)
-    return mm_to_print_px(210), mm_to_print_px(297)
+        return mm_to_print_px(297, dpi), mm_to_print_px(420, dpi)
+    return mm_to_print_px(210, dpi), mm_to_print_px(297, dpi)
 
 
 
@@ -145,26 +145,26 @@ def compose_print_sheet_page(card_images, layout):
 def build_print_sheets_pdf(guests, paper="a4", card_format="event", size="standard"):
     cf = normalize_card_format(card_format)
     cw, ch = card_layout_pixels(cf)
-    
-    pw, ph = paper_dimensions(paper)
+
+    dpi = 150 if size == "xlarge" else PRINT_DPI
+    pw, ph = paper_dimensions(paper, dpi)
     bl = best_print_layout(pw, ph, cw, ch, size=size)
     layout = {**bl, "page_w": pw, "page_h": ph, "card_w": cw, "card_h": ch}
     per = layout["per_page"]
-    card_images = [render_card(g, cf).convert("RGB") for g in guests]
     pages = []
-    for start in range(0, len(card_images), per):
-        chunk = card_images[start : start + per]
+    for start in range(0, len(guests), per):
+        chunk = [render_card(g, cf).convert("RGB") for g in guests[start : start + per]]
         pages.append(compose_print_sheet_page(chunk, layout))
     buf = io.BytesIO()
     if len(pages) == 1:
-        pages[0].save(buf, format="PDF", resolution=PRINT_DPI)
+        pages[0].save(buf, format="PDF", resolution=dpi)
     else:
         pages[0].save(
             buf,
             format="PDF",
             save_all=True,
             append_images=pages[1:],
-            resolution=PRINT_DPI,
+            resolution=dpi,
         )
     buf.seek(0)
     return buf

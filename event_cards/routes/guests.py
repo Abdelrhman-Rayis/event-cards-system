@@ -4,17 +4,27 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+import io
+import tarfile
+
 from flask import (
     Blueprint,
     redirect,
     render_template,
     request,
+    send_file,
     send_from_directory,
     url_for,
 )
 
 from .. import config
-from ..config import EVENT, PHOTOS_DIR
+from ..config import (
+    EVENT,
+    EVENT_CONFIG_FILE,
+    GUESTS_FILE,
+    PHOTOS_DIR,
+    STATIC_DIR,
+)
 from ..models import companions_label, gen_code, load_guests, save_guests
 
 guests_bp = Blueprint("guests", __name__)
@@ -125,6 +135,27 @@ def delete(code):
 @guests_bp.route("/photo/<filename>")
 def photo(filename):
     return send_from_directory(PHOTOS_DIR, filename)
+
+
+@guests_bp.route("/export-all")
+def export_all():
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        if GUESTS_FILE.exists():
+            tar.add(GUESTS_FILE, arcname="guests.json")
+        if EVENT_CONFIG_FILE.exists():
+            tar.add(EVENT_CONFIG_FILE, arcname="event.json")
+        if PHOTOS_DIR.exists():
+            tar.add(PHOTOS_DIR, arcname="photos")
+        for logo in sorted(STATIC_DIR.glob("logo*.png")):
+            tar.add(logo, arcname=f"static/{logo.name}")
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype="application/gzip",
+        as_attachment=True,
+        download_name=f"event-cards-export-{EVENT['date_code']}.tar.gz",
+    )
 
 import pandas as pd
 

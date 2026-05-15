@@ -268,7 +268,16 @@
 
             </div>
       <section class="card">
-        <div class="card__hdr"><h2>Guests ({{ guests|length }})</h2></div>
+        <div class="card__hdr" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Guests ({{ guests|length }})</h2>
+          {% if guests %}
+          <a href="{{ url_for('guests.export_all') }}"
+             class="btn btn--ghost btn--sm"
+             title="Download all guests, photos, event config, and logos as a single .tar.gz archive">
+            Export All Data
+          </a>
+          {% endif %}
+        </div>
 
         {% if guests %}
           <div style="display: flex; gap: 8px;">
